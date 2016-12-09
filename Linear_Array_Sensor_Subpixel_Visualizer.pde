@@ -175,7 +175,7 @@ void setup() {
   MeasurementHistory = new float[OUTPUT_DATA_LENGTH];
   
   // the data length times the number of pixels per data point
-  SCREEN_WIDTH = 1930;//OUTPUT_DATA_LENGTH * SCALE_X;
+  SCREEN_WIDTH = 1024;//OUTPUT_DATA_LENGTH * SCALE_X;
   HALF_SCREEN_WIDTH = SCREEN_WIDTH / 2;
   
   // set the screen dimensions

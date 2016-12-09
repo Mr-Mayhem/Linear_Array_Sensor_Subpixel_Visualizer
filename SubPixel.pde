@@ -135,17 +135,17 @@ class SubPixel {
       ellipse(((posPeakLoc - shiftSumX) * scale_x) + pan_x,  HALF_SCREEN_HEIGHT - (b2 * scale_y) + pan_y, markSize, markSize);
       ellipse(((posPeakLoc - shiftSumX + 1) * scale_x) + pan_x,  HALF_SCREEN_HEIGHT - (c2 * scale_y) + pan_y, markSize, markSize);
       
-      YCoord = 60;
+      YCoord = SCREEN_HEIGHT-120;
       fill(255);
       textSize(14);
       //text("negPeakLoc = " + negPeakLoc, 0, YCoord);
       //text("posPeakLoc = " + posPeakLoc, 125, YCoord);
       //text("m1 = " + String.format("%.3f", m1), 250, YCoord);
       //text("m2 = " + String.format("%.3f", m2), 325, YCoord);
-      text("preciseWidth = " + String.format("%.3f", preciseWidth), 400, YCoord);
-      text("preciseWidthMM =  " + String.format("%.3f", preciseWidthMM), 575, YCoord);
-      text("precisePosition = " + String.format("%.3f", precisePosition), 775, YCoord);
-      text("PreciseMMPos =  " + String.format("%.3f", preciseMMPos), 1000, YCoord);
+      text("preciseWidth = " + String.format("%.3f", preciseWidth), 100, YCoord);
+      text("preciseWidthMM =  " + String.format("%.3f", preciseWidthMM), 300, YCoord);
+      text("precisePosition = " + String.format("%.3f", precisePosition), 500, YCoord);
+      text("PreciseMMPos =  " + String.format("%.3f", preciseMMPos), 700, YCoord);
     }
   }
 }
