@@ -104,36 +104,36 @@ int[] edges = new int[0];                    // array for edges signal
 float[] MeasurementHistory = new float[0];
 
 // Global Variables:
-int signalSource = 0;                        // selects a signal data source
-int kernelSource = 0;                        // selects a kernel
-int SENSOR_PIXELS = 0;                       // number of discrete values in the input array, 1 per linear array sensor pixel
-int N_BYTES_PER_SENSOR_FRAME = 0;            // we use 2 bytes to represent each sensor pixel
-int N_BYTES_PER_SENSOR_FRAME_PLUS1 = 0;      // the data bytes + the PREFIX byte
-int SCREEN_HEIGHT = 0;                       // scales screen height relative to highest data value
-int HALF_SCREEN_HEIGHT = 0;
-int OUTPUT_DATA_LENGTH = 0;                  // number of discrete values in the output array, set in setup()
+int signalSource;                    // selects a signal data source
+int kernelSource;                    // selects a kernel
+int SENSOR_PIXELS;                   // number of discrete values in the input array, 1 per linear array sensor pixel
+int N_BYTES_PER_SENSOR_FRAME;        // we use 2 bytes to represent each sensor pixel
+int N_BYTES_PER_SENSOR_FRAME_PLUS1;  // the data bytes + the PREFIX byte
+int SCREEN_HEIGHT;                   // scales screen height relative to highest data value
+int HALF_SCREEN_HEIGHT;              // half the screen height, reduces division math work because it is used alot
+int OUTPUT_DATA_LENGTH;              // number of discrete values in the output array, set in setup()
   
-int KERNEL_LENGTH = 0;                       // number of discrete values in the kernel array, set in setup() 
-int HALF_KERNEL_LENGTH = 0;                  // Half the kernel length, used to correct convoltion phase shift
-int kernelDrawYOffset = 75;                  // height above bottom of screen to draw the kernel data points
+int KERNEL_LENGTH;                   // number of discrete values in the kernel array, set in setup() 
+int HALF_KERNEL_LENGTH;              // Half the kernel length, used to correct convoltion phase shift
+int kernelDrawYOffset;               // height above bottom of screen to draw the kernel data points
   
-int markSize = 3;                            // diameter of drawn subpixel marker circles
-int bytesRead = 0;                           // number of bytes actually read out from the serial buffer
-int availableBytesDraw = 0;                  // used to show the number of bytes present in the serial buffer
-int subpixelMarkerLen = 0;                   // length of vertical lines which indicate subpixel peaks and shadow center location
+int markSize;                        // diameter of drawn subpixel marker circles
+int bytesRead;                       // number of bytes actually read out from the serial buffer
+int availableBytesDraw;              // used to show the number of bytes present in the serial buffer
+int subpixelMarkerLen;               // length of vertical lines which indicate subpixel peaks and shadow center location
 
-float gaussianKernelSigma = 1.5;             // input to kernel creation function, controls spreading of gaussian kernel
-float loGKernelSigma = 1.0;                  // input to kernel creation function, controls spreading of loG kernel
-float kernelMultiplier = 100.0;              // multiplies the plotted y values of the kernel, for greater visibility since they are small
-float noiseInput = 0.05;                     // used for generating smooth noise for original data; lower values are smoother noise
-float noiseIncrement = noiseInput;           // the increment of change of the noise input
+float gaussianKernelSigma;           // input to kernel creation function, controls spreading of gaussian kernel
+float loGKernelSigma;                // input to kernel creation function, controls spreading of loG kernel
+float kernelMultiplier;              // multiplies the plotted y values of the kernel, for greater visibility since they are small
+float noiseInput;                    // used for generating smooth noise for original data; lower values are smoother noise
+float noiseIncrement;                // the increment of change of the noise input
 
 // used to count sensor data frames
 int chartRedraws = 0;
 
 // width
-int SCREEN_WIDTH = 0;
-int HALF_SCREEN_WIDTH = 0;
+int SCREEN_WIDTH;                    // screen width
+int HALF_SCREEN_WIDTH;               // half the screen width, reduces division math work because it is used alot
 
 // ==============================================================================================
 // Set Objects
@@ -148,10 +148,36 @@ void setup() {
   // Set the data & screen scaling:
   // You are encouraged to adjust these, especially to 'zoom in' to the shadow location see the subpixel details better.
   
-  SCREEN_HEIGHT = int(HIGHEST_ADC_VALUE * 0.25); // sets screen height relative to the highest ADC value, greater values increases screen height
-  HALF_SCREEN_HEIGHT = SCREEN_HEIGHT / 2; // leave alone. Used in many places to center data at middle height
-  subpixelMarkerLen = int(SCREEN_HEIGHT * 0.01);  // sets height deviation of vertical lines from center height, 
-                                          // indicates subpixel peaks and shadow center location
+  // sets screen height relative to the highest ADC value, greater values increases screen height
+  SCREEN_HEIGHT = int(HIGHEST_ADC_VALUE * 0.25); 
+  
+  // leave alone! Used in many places to center data at middle height
+  HALF_SCREEN_HEIGHT = SCREEN_HEIGHT / 2;
+  
+  // sets height deviation of vertical lines from center height, indicates subpixel peaks and shadow center location
+  subpixelMarkerLen = int(SCREEN_HEIGHT * 0.01);  
+                      
+  // height above bottom of screen to draw the kernel data points                                      
+  kernelDrawYOffset = 75;
+  
+  // diameter of drawn subpixel marker circles
+  markSize = 3;
+  
+  // input to kernel creation function, controls spreading of gaussian kernel
+  gaussianKernelSigma = 1.5; 
+  
+  // input to kernel creation function, controls spreading of loG kernel
+  loGKernelSigma = 1.0; 
+  
+  // multiplies the plotted y values of the kernel, for greater visibility since they are small
+  kernelMultiplier = 100.0;
+
+  // used for generating smooth noise for original data; lower values are smoother noise
+  noiseInput = 0.05;
+
+  // the increment of change of the noise input
+  noiseIncrement = noiseInput;
+  
   // Choose a kernel source: =====================================================================
   kernelSource = 0;
   // Create a kernelGenerator object, which creates a kernel and saves it's data into an array
