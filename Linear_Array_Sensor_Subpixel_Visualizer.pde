@@ -59,7 +59,8 @@ translated into Processing (java) by Douglas Mayhew
  We still have some more refactoring and features yet to apply. I want to add:
  windowing and thresholding to reduce the workload of processing all data to processing only some data
  interpolation is not yet in this one.
- Bringing the core of the position and subpixel code into Arduino for Teensy 3.6, so it can
+ 
+ My update goals:
  1. Send shadow position and width instead of raw data, which is slower.
  2. Send a windowed section containing only the interesting data, rather than all the data.
  3. Auto-Calibration using drill bits, dowel pins, etc.
@@ -67,6 +68,7 @@ translated into Processing (java) by Douglas Mayhew
     for additional subpixel accuracy
  5. Add data window zoom and scrolling ***(Done!)***
  6. Add measurement history display
+ 7. Bringing the core of the position and subpixel code into Arduino for Teensy 3.6
 */
 // ==============================================================================================
 // imports:
