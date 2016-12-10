@@ -106,11 +106,9 @@ void mouseWheel(int step) {
     
     text("Use mouse to drag, mouse wheel to zoom", HALF_SCREEN_WIDTH-150, 90);
     
-    //text("pan_x: " + String.format("%.3f", pan_x) + 
-    //"  scale_x: " + String.format("%.3f", scale_x) + 
-    //"  pan_y: " + String.format("%.3f", pan_y) + 
-    //"  scale_y: " + String.format("%.3f", scale_y), 
-    //HALF_SCREEN_WIDTH-200, 90);
+    text("pan_x: " + String.format("%.3f", pan_x) + 
+    "  scale_x: " + String.format("%.3f", scale_x), 
+    50, 50);
   }
   
   void drawKernel(float pan_x, float scale_x, float pan_y, float scale_y){
@@ -208,7 +206,7 @@ void mouseWheel(int step) {
     for (outerPtrX = dataStartPos; outerPtrX < dataStopPos; outerPtrX++) {
     
       outerCount++; // lets us draw widthwise (x axis) on the screen, offset from the data array index
-
+      
       // Below we prepare 3 indexes to phase shift the x axis to the left as drawn, which corrects 
       // for convolution shift, and then multiply by the x scaling variable.
       

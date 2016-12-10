@@ -50,7 +50,7 @@ public class PanZoomX {
   private float panVelocity = 40;
   private float scaleVelocity = 0.05;
   private float minLogScale = -4;
-  private float maxLogScale = 10;
+  private float maxLogScale = 12;
 
   private float logScale = 1;
   private float scale_x = (float) Math.pow(2, logScale);
