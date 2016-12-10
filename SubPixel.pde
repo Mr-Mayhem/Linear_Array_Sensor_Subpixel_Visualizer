@@ -13,7 +13,7 @@ class SubPixel {
     
     int loopStartPos, loopEndPos; 
     int negPeak, posPeak;                    // peak values, y axis (height centric)
-    int negPeakLoc, posPeakLoc;              // array index locations of greatest negative & positive peak values in 1st derivative data
+    int negPeakLoc, posPeakLoc;              // array index locations of greatest negative & positive peak values in 1st difference data
     float a1, b1, c1, a2, b2, c2;            // sub pixel quadratic interpolation input variables, 3 per D1 peak, one negative, one positive
     float negPeakSubPixelLoc;                // quadratic interpolated negative peak subpixel x position; 
     float posPeakSubPixelLoc;                // quadratic interpolated positive peak subpixel x position
@@ -26,12 +26,12 @@ class SubPixel {
     float XCoord = 0;                        // temporary variable for holding a screen X coordinate
     float YCoord = 0;                        // temporary variable for holding a screen Y coordinate
     
-    // skip a kernel width of points to avoid the 1st derivative peak at the very beginning of the array
+    // skip a kernel width of points to avoid the 1st difference peak at the very beginning of the array
     loopStartPos = dataStartPos + KERNEL_LENGTH;  
     loopEndPos = dataStopPos; // for clarity & consistency follow the same convention as loopStartPos
     
-    negPeak = 0;                             // value of greatest negative peak found during scan of derivative data
-    posPeak = 0;                             // value of greatest positive peak found during scan of derivative data
+    negPeak = 0;                             // value of greatest negative peak found during scan of difference data
+    posPeak = 0;                             // value of greatest positive peak found during scan of difference data
     
     negPeakLoc = dataStopPos; // one past the last pixel, to prevent false positives?
     posPeakLoc = dataStopPos; // one past the last pixel, to prevent false positives?
@@ -41,11 +41,11 @@ class SubPixel {
     negPeakSubPixelLoc = posPeakSubPixelLoc = 0;
     
     // we should have already ran a gaussian smoothing routine over the data, and 
-    // also already saved the 1st derivative of the smoothed data into an array.
-    // Therefore, all we do here is find the peaks on the 1st derivative data.
+    // also already saved the 1st difference of the smoothed data into an array.
+    // Therefore, all we do here is find the peaks on the 1st difference data.
 
     for (int i = loopStartPos; i < loopEndPos - 1; i++) {
-    // find the the tallest positive and negative peaks in 1st derivative of the convolution output data, 
+    // find the the tallest positive and negative peaks in 1st difference of the convolution output data, 
     // which is the point of steepest positive and negative slope in the smoothed original data.
       if (output2[i] > posPeak) {
         posPeak = output2[i];
@@ -56,7 +56,7 @@ class SubPixel {
       }
     }
 
-    // store the 1st derivative values to simple variables
+    // store the 1st difference values to simple variables
     c1=output2[negPeakLoc+1];  // tallest negative peak array index location plus 1
     b1=output2[negPeakLoc];    // tallest negative peak array index location
     a1=output2[negPeakLoc-1];  // tallest negative peak array index location minus 1
@@ -81,10 +81,17 @@ class SubPixel {
       // https://visionexperts.blogspot.com/2009/03/sub-pixel-maximum.html
       
       // the subpixel location of a shadow edge is found as the peak of a parabola fitted to 
-      // the top 3 points of a smoothed original data's first derivative peak.
+      // the top 3 points of a smoothed original data's first difference peak.
       
-      // the first derivative is simply the differences between all adjacent data points,
-      // and is proportional to the steepness and direction of the slope in the original data.
+      // the first difference is simply the individual differences between all adjacent data 
+      // points of the original data collected up together, in this case stored in a seperate array.
+      // Each difference value is proportional to the steepness and direction of the slope in the 
+      // original data.
+      // Also in this case we smooth the original data first to make the peaks we are searching for
+      // more symmectrical and rounded, and thus closer to the shape of a parabola, which we fit to 
+      // the peaks next. The more the highest (or lowest for negative peaks) 3 points of the peaks 
+      // resemble a parabola, the more accurate the subpixel result.
+      
       
       // for the subpixel value of the greatest negative peak found above, 
       // corresponds with the left edge of a narrow shadow cast upon the sensor

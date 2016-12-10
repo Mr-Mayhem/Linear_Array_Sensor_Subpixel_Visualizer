@@ -80,7 +80,7 @@ import processing.serial.*;
 
 color COLOR_ORIGINAL_DATA = color(255);
 color COLOR_KERNEL_DATA = color(255, 255, 0);
-color COLOR_DERIVATIVE1_OF_OUTPUT = color(0, 255, 0);
+color COLOR_FIRST_DIFFERENCE_OF_OUTPUT = color(0, 255, 0);
 color COLOR_OUTPUT_DATA = color(255, 0, 255);
 color COLOR_EDGES = color(0, 255, 0);
 color COLOR_TAIL = color(0, 255, 255);
@@ -255,7 +255,7 @@ void draw() {
   fill(255);
   
   // Counts 1 to 60 and repeats
-  text(chartRedraws, 10, 50); //<>// //<>//
+  text(chartRedraws, 10, 50); //<>//
 
   // Plot the Data
    DP1.display();
@@ -271,4 +271,4 @@ void mouseDragged() {
 
 void mouseWheel(MouseEvent event) {
   DP1.mouseWheel(-event.getCount()); // note the minus sign (-) inverts the mouse wheel output direction
-} //<>// //<>//
+} //<>//

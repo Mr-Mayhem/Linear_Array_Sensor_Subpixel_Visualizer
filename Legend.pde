@@ -39,11 +39,11 @@ class Legend {
     text("Smoothed convolution output data, shifted back into original phase", rectX + 20, rectY + 10);
     
     rectY += 20;
-    stroke(COLOR_DERIVATIVE1_OF_OUTPUT);
-    fill(COLOR_DERIVATIVE1_OF_OUTPUT);
+    stroke(COLOR_FIRST_DIFFERENCE_OF_OUTPUT);
+    fill(COLOR_FIRST_DIFFERENCE_OF_OUTPUT);
     rect(rectX, rectY, rectWidth, rectHeight);
     fill(255);
-    text("1st derivative of convolution output data", rectX + 20, rectY + 10);
+    text("1st difference of convolution output data", rectX + 20, rectY + 10);
   
   }
 }

@@ -34,7 +34,8 @@ float [] gaussian = {0.0048150257, 0.028716037, 0.10281857, 0.22102419, 0.285252
   // kernel = setArray(sorbel);
   
   // Laplacians are used to find edges using the 2nd derivative method, by looking for zero-crossings after running it.
-  // but our preferred method of fitting a parabola to the peaks of the 1st derivative is more accurate, it being a sub-pixel method.
+  // but our preferred method of fitting a parabola to the peaks of the 1st derivative (1st difference in dsp jargon) 
+  // is more accurate, it being a sub-pixel method.
   
   // A hard-coded Laplacian kernel
   // kernel = setArray(laplacian);
