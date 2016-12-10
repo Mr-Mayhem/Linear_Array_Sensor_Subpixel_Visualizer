@@ -97,13 +97,11 @@ final int PREFIX = 0xFF;
 // ==============================================================================================
 // Arrays:
 
-byte[] byteArray = new byte[0];              // array of raw serial data bytes
-int[] input = new int[0];                    // array for input signal
-float[] kernel = new float[0];               // array for impulse response, or kernel
-int[] output = new int[0];                   // array for output signal
-int[] output2 = new int[0];                  // array for output signal
-int[] edges = new int[0];                    // array for edges signal
-float[] MeasurementHistory = new float[0];
+byte[] byteArray = new byte[0];      // array of raw serial data bytes
+int[] input = new int[0];            // array for input signal
+float[] kernel = new float[0];       // array for impulse response, or kernel
+float[] output = new float[0];       // array for output signal
+float[] output2 = new float[0];      // array for output signal
 
 // Global Variables:
 int signalSource;                    // selects a signal data source
@@ -199,9 +197,8 @@ void setup() {
   println("OUTPUT_DATA_LENGTH = " + OUTPUT_DATA_LENGTH);
   
   // arrays for output signals, get resized after kernel size is known
-  output = new int[OUTPUT_DATA_LENGTH];
-  output2 = new int[OUTPUT_DATA_LENGTH];
-  MeasurementHistory = new float[OUTPUT_DATA_LENGTH];
+  output = new float[OUTPUT_DATA_LENGTH];
+  output2 = new float[OUTPUT_DATA_LENGTH];
   
   // the data length times the number of pixels per data point
   SCREEN_WIDTH = 1024;//OUTPUT_DATA_LENGTH * SCALE_X;
@@ -259,6 +256,7 @@ void draw() {
 
   // Plot the Data
    DP1.display();
+   SG1.zeroOutputData();
 }
 
 void keyPressed() {

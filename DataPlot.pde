@@ -102,7 +102,6 @@ void mouseWheel(int step) {
       processData(pan_x, scale_x, pan_y, scale_y, wDataStartIndex, wDataStopIndex);    // from 0 to SENSOR_PIXELS-1
     }
     
-    //DrawTail(pan_x, scale_x, pan_y, scale_y, SENSOR_PIXELS, OUTPUT_DATA_LENGTH);  // from SENSOR_PIXELS to (SENSOR_PIXELS + KERNEL_LENGTH)-1
     SP1.calculateSensorShadowPosition(pan_x, scale_x, pan_y, scale_y, wDataStartIndex, wDataStopIndex); // Subpixel calculation  
     
     text("pan_x: " + String.format("%.3f", pan_x) + 
@@ -131,12 +130,12 @@ void mouseWheel(int step) {
   void processSerialData(float pan_x, float scale_x, float pan_y, float scale_y, int dataStartPos, int dataStopPos){
   
     int outerCount = 0;
-  
+    
     // increment the outer loop pointer from 0 to SENSOR_PIXELS-1
     for (outerPtrX = dataStartPos; outerPtrX < dataStopPos; outerPtrX++) {
     
       outerCount++; // lets us draw widthwise (x axis) on the screen, offset from the data array index
-
+      
       // receive serial port data into the input[] array
        
       // Read a pair of bytes from the byte array, convert them into an integer, 
@@ -167,7 +166,7 @@ void mouseWheel(int step) {
       // convolution inner loop
       for (int innerPtrX = 0; innerPtrX < KERNEL_LENGTH; innerPtrX++) { // increment the inner loop pointer
         // convolution (that magic line which can do so many different things depending on the kernel)
-        output[outerPtrX+innerPtrX] = int(output[outerPtrX+innerPtrX] + input[outerPtrX] * kernel[innerPtrX]); 
+        output[outerPtrX+innerPtrX] = output[outerPtrX+innerPtrX] + input[outerPtrX] * kernel[innerPtrX]; 
       }
   
       // plot the output data
@@ -178,35 +177,36 @@ void mouseWheel(int step) {
       // draw section of greyscale bar showing the 'color' of output data values
       greyscaleBarMapped(drawPtrXLessK, scale_x, 11, output[outerPtrX]);
       
-      // find 1st difference of the convolved data, the difference between adjacent points in the input[] array
-      // zero the output data, otherwise values accumulate  between frames, and indeed if you comment 
-      // this out, the 1st difference plot looks quite trippy on the screen.
- 
-      if (outerPtrX > 0){
+      // find 1st difference of the convolved data, the difference between adjacent points in the input[] array.
+     
+      // We skip the first KERNEL_LENGTH of convolution output data, which is garbage from smoothing convolution 
+      // kernel not being fully immersed in the input signal data. Note that the last KERNEL_LENGTH values of the 
+      // output has the same issue. The output from convolution is SENSOR_PIXELS + KERNEL_LENGTH, so by setting 
+      // dataStopPos to SENSOR_PIXELS, we ignore the last KERNEL_LENGTH of convolution output samples too.
+      
+      // The minimum number of input data samples is two times the kernel length, (we ignore 
+      // the fist and last kernel lengths of data) + 1, which would result in the minumum of only one sample 
+      // processed. 
+      if (outerPtrX > KERNEL_LENGTH){
         stroke(COLOR_FIRST_DIFFERENCE_OF_OUTPUT);
         output2[outerPtrX] = output[outerPtrX] - output[outerPtrX-1]; // the difference between adjacent points, called the 1st difference
         point(drawPtrXLessKandD1, HALF_SCREEN_HEIGHT - (output2[outerPtrX] * scale_y) + pan_y);
         // draw section of greyscale bar showing the 'color' of output2 data values
         //void greyscaleBarMapped(float x, float scale_x, float y, float value) {
         greyscaleBarMappedAbs(drawPtrXLessKandD1, scale_x, 22, output2[outerPtrX]);
-        output[outerPtrX-1] = 0;
       }
     }
-    output[dataStopPos] = 0;
   }
   
   void processData(float pan_x, float scale_x, float pan_y, float scale_y, int dataStartPos, int dataStopPos){
     
-  
     int outerCount = 0;
-  
+    
     // increment the outer loop pointer from 0 to SENSOR_PIXELS-1
     for (outerPtrX = dataStartPos; outerPtrX < dataStopPos; outerPtrX++) {
     
-      outerCount++; // lets us draw widthwise (x axis) on the screen, offset from the data array index 
-      
-      // input[] array is already populated by signal generator
-      
+      outerCount++; // lets us draw widthwise (x axis) on the screen, offset from the data array index
+
       // Below we prepare 3 indexes to phase shift the x axis to the left as drawn, which corrects 
       // for convolution shift, and then multiply by the x scaling variable.
       
@@ -231,7 +231,7 @@ void mouseWheel(int step) {
       // convolution inner loop
       for (int innerPtrX = 0; innerPtrX < KERNEL_LENGTH; innerPtrX++) { // increment the inner loop pointer
         // convolution (that magic line which can do so many different things depending on the kernel)
-        output[outerPtrX+innerPtrX] = int(output[outerPtrX+innerPtrX] + input[outerPtrX] * kernel[innerPtrX]); 
+        output[outerPtrX+innerPtrX] = output[outerPtrX+innerPtrX] + input[outerPtrX] * kernel[innerPtrX]; 
       }
   
       // plot the output data
@@ -241,18 +241,26 @@ void mouseWheel(int step) {
      
       // draw section of greyscale bar showing the 'color' of output data values
       greyscaleBarMapped(drawPtrXLessK, scale_x, 11, output[outerPtrX]);
-    
-      // find 1st difference of the convolved data, the difference between adjacent points in the input[] array
-      if (outerPtrX > 0){
+      
+      // find 1st difference of the convolved data, the difference between adjacent points in the input[] array.
+     
+      // We skip the first KERNEL_LENGTH of convolution output data, which is garbage from smoothing convolution 
+      // kernel not being fully immersed in the input signal data. Note that the last KERNEL_LENGTH values of the 
+      // output has the same issue. The output from convolution is SENSOR_PIXELS + KERNEL_LENGTH, so by setting 
+      // dataStopPos to SENSOR_PIXELS, we ignore the last KERNEL_LENGTH of convolution output samples too.
+      
+      // The minimum number of input data samples is two times the kernel length, (we ignore 
+      // the fist and last kernel lengths of data) + 1, which would result in the minumum of only one sample 
+      // processed. 
+      if (outerPtrX > KERNEL_LENGTH){
         stroke(COLOR_FIRST_DIFFERENCE_OF_OUTPUT);
-        output2[outerPtrX] = output[outerPtrX] - output[outerPtrX-1];
+        output2[outerPtrX] = output[outerPtrX] - output[outerPtrX-1]; // the difference between adjacent points, called the 1st difference
         point(drawPtrXLessKandD1, HALF_SCREEN_HEIGHT - (output2[outerPtrX] * scale_y) + pan_y);
         // draw section of greyscale bar showing the 'color' of output2 data values
+        //void greyscaleBarMapped(float x, float scale_x, float y, float value) {
         greyscaleBarMappedAbs(drawPtrXLessKandD1, scale_x, 22, output2[outerPtrX]);
-        output[outerPtrX-1] = 0;
       }
     }
-    output[dataStopPos] = 0;
   }
   
   void greyscaleBarMapped(float x, float scale_x, float y, float value) {
