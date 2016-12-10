@@ -53,7 +53,7 @@ class dataPlot {
   
   boolean over() {
     if (mouseX > 0 && mouseX < wWidth && 
-      mouseY > 0 && mouseY < wHeight + 40) {
+      mouseY > 0 && mouseY < SCREEN_HEIGHT + 40) {
       return true;
     } else {
       return false;
@@ -103,6 +103,8 @@ void mouseWheel(int step) {
     }
     
     SP1.calculateSensorShadowPosition(pan_x, scale_x, pan_y, scale_y, wDataStartIndex, wDataStopIndex); // Subpixel calculation  
+    
+    text("Use mouse to drag, mouse wheel to zoom", HALF_SCREEN_WIDTH-150, 90);
     
     //text("pan_x: " + String.format("%.3f", pan_x) + 
     //"  scale_x: " + String.format("%.3f", scale_x) + 

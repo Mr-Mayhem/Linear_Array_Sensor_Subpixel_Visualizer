@@ -187,7 +187,7 @@ void setup() {
   // Choose a signal source :=====================================================================
   // You are encouraged to try different signal sources, to see how the subpixel code behaves with 
   // nearly perfect waveforms
-  signalSource = 2;
+  signalSource = 3;
   // =============================================================================================
   
   // Create a dataPlot object, which plots data and provides mouse sliding and zooming ability
