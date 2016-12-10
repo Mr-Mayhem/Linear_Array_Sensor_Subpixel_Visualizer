@@ -62,7 +62,7 @@ float [] gaussian = {0.0048150257, 0.028716037, 0.10281857, 0.22102419, 0.285252
   return kernel;
   }
   
-  float [] makeGaussKernel1d(double sigma) {
+  float [] makeGaussKernel1d(float sigma) {
     
    /**
    * This sample code is made available as part of the book "Digital Image
@@ -127,14 +127,14 @@ float [] gaussian = {0.0048150257, 0.028716037, 0.10281857, 0.22102419, 0.285252
     return fkernel;
   }
   
-  float[] createLoGKernal1d(double deviation) {
+  float[] createLoGKernal1d(float deviation) {
     
     int center = (int) (4 * deviation);
     int kSize = 2*center+1; // set to an odd value for an even integer phase offset
     // using a double internally for greater precision
     double[] kernel = new double[kSize];
-    // using a float for the final return value
-    float[] fkernel = new float [kSize];  // float version for return value
+    // using a double for the final return value
+    float[] fkernel = new float [kSize];  // double version for return value
     double first = 1.0 / (Math.PI * Math.pow(deviation, 4.0));
     double second = 2.0 * Math.pow(deviation, 2.0);
     double third;

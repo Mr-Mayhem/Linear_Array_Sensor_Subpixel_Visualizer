@@ -62,7 +62,7 @@ public class PanZoomX {
   
   private PApplet p;
 
-  public PanZoomX(PApplet p, int MaxPanX) {
+  public PanZoomX(PApplet p) {
     this.p = p;
     //maxpan_x = MaxPanX;
   }

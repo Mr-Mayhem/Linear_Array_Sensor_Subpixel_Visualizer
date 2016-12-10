@@ -35,7 +35,7 @@ class dataPlot {
     wYpos = yp;
     wDataLen = datalen;
     
-    PZX1 = new PanZoomX(p, wWidth);
+    PZX1 = new PanZoomX(p);
     pan_x = PZX1.getPanX();
     scale_x = PZX1.getScaleX();
     pan_y = PZX1.getPanY();
@@ -123,7 +123,7 @@ void mouseWheel(int step) {
   
       // draw new kernel point (y scaled up by kernelMultiplier for better visibility)
       point(drawPtrXLessK+HALF_SCREEN_WIDTH, 
-      SCREEN_HEIGHT-kernelDrawYOffset-(kernel[outerPtrX] * scale_y) + pan_y);
+      SCREEN_HEIGHT-kernelDrawYOffset - (kernel[outerPtrX] * scale_y) + pan_y);
      }
   }
 

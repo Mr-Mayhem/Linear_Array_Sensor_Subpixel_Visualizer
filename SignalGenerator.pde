@@ -189,7 +189,7 @@ class SignalGenerator {
     double squarePoint = 0;
     int data[] = new int[dataLength];
     
-    for( int i = 0; i < data.length; i++ )
+    for(int i = 0; i < data.length; i++)
     {
        sinPoint = Math.sin(2 * Math.PI * i/wavelength);
        squarePoint = Math.signum(sinPoint);

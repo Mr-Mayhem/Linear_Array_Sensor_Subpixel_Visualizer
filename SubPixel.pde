@@ -14,7 +14,7 @@ class SubPixel {
     
     int negPeakLoc, posPeakLoc;     // array index locations of greatest negative & positive peak values in 1st difference data
     double negPeak = 0;             // value of greatest negative peak in 1st difference data, y axis (height centric)
-    double posPeak = 0;             // value of greatest positive peak in 1st difference data, y axis (height centric)
+    double posPeak = 0;             // value of greatest positivefloat( peak in 1st difference data, y axis (height centric)
     double a1, b1, c1, a2, b2, c2;  // sub pixel quadratic interpolation input variables, 3 per D1 peak, one negative, one positive
     double negPeakSubPixelLoc;      // quadratic interpolated negative peak subpixel x position; 
     double posPeakSubPixelLoc;      // quadratic interpolated positive peak subpixel x position
@@ -147,9 +147,9 @@ class SubPixel {
       //text("negPeakSubPixelLoc = " + String.format("%.3f", negPeakSubPixelLoc), 250, YCoord);
       //text("posPeakSubPixelLoc = " + String.format("%.3f", posPeakSubPixelLoc), 325, YCoord);
       text("preciseWidth = " + String.format("%.3f", preciseWidth), 100, YCoord);
-      text("preciseWidthMM =  " + String.format("%.3f", preciseWidthMM), 275, YCoord);
+      text("preciseWidthMM =  " + String.format("%.4f", preciseWidthMM), 275, YCoord);
       text("precisePosition = " + String.format("%.3f", precisePosition), 475, YCoord);
-      text("PreciseMMPos =  " + String.format("%.3f", preciseMMPos), 675, YCoord);
+      text("PreciseMMPos =  " + String.format("%.4f", preciseMMPos), 675, YCoord);
     }
   }
 }

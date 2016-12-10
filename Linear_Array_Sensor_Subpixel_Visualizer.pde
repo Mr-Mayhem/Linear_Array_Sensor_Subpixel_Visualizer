@@ -99,7 +99,7 @@ final int PREFIX = 0xFF;
 
 byte[] byteArray = new byte[0];      // array of raw serial data bytes
 int[] input = new int[0];            // array for input signal
-float[] kernel = new float[0];       // array for impulse response, or kernel
+float[] kernel = new float[0];     // array for impulse response, or kernel
 float[] output = new float[0];       // array for output signal
 float[] output2 = new float[0];      // array for output signal
 
