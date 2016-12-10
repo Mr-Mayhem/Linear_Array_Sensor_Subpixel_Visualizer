@@ -146,9 +146,9 @@ class SubPixel {
       //text("posPeakLoc: " + posPeakLoc, 125, YCoord);
       //text("negPeakSubPixelLoc: " + String.format("%.3f", negPeakSubPixelLoc), 250, YCoord);
       //text("posPeakSubPixelLoc: " + String.format("%.3f", posPeakSubPixelLoc), 325, YCoord);
-      text("preciseWidth: " + String.format("%.3f", preciseWidth), 150, YCoord);
-      text("Width mm: " + String.format("%.4f", preciseWidthMM), 325, YCoord);
-      text("precisePosition = " + String.format("%.3f", precisePosition), 475, YCoord);
+      text("Pixel Width: " + String.format("%.3f", preciseWidth), 150, YCoord);
+      text("Pixel Position = " + String.format("%.3f", precisePosition), 325, YCoord);
+      text("Width mm: " + String.format("%.4f", preciseWidthMM), 525, YCoord);
       text("Center Position mm: " + String.format("%.4f", preciseMMPos), 675, YCoord);
     }
   }
