@@ -11,20 +11,24 @@ class SubPixel {
   
   void calculateSensorShadowPosition(float pan_x, float scale_x, float pan_y, float scale_y, int dataStartPos, int dataStopPos){
     
-    dataStartPos = dataStartPos + KERNEL_LENGTH;
-     
+    int loopStartPos, loopEndPos; 
     int negPeak, posPeak;                    // peak values, y axis (height centric)
     int negPeakLoc, posPeakLoc;              // array index locations of greatest negative & positive peak values in 1st derivative data
     float a1, b1, c1, a2, b2, c2;            // sub pixel quadratic interpolation input variables, 3 per D1 peak, one negative, one positive
-    float m1, m2;                            // sub pixel quadratic interpolation output variables, 1 per D1 peak, one negative, one positive
+    float negPeakSubPixelLoc;                // quadratic interpolated negative peak subpixel x position; 
+    float posPeakSubPixelLoc;                // quadratic interpolated positive peak subpixel x position
     float preciseWidth = 0;                  // filament width is still here if you need it
     float preciseWidthMM = 0;                // filament width in mm is still here if you need it
-    float precisePosition = 0;               // final output before conversion to mm
+    float precisePosition = 0;               // final output
     float preciseMMPos = 0;                  // final mm output
     float roughWidth = 0;                    // integer difference between the two peaks without subpixel precision
     float shiftSumX = 0;                     // temporary variable for summing x shift values
     float XCoord = 0;                        // temporary variable for holding a screen X coordinate
     float YCoord = 0;                        // temporary variable for holding a screen Y coordinate
+    
+    // skip a kernel width of points to avoid the 1st derivative peak at the very beginning of the array
+    loopStartPos = dataStartPos + KERNEL_LENGTH;  
+    loopEndPos = dataStopPos; // for clarity & consistency follow the same convention as loopStartPos
     
     negPeak = 0;                             // value of greatest negative peak found during scan of derivative data
     posPeak = 0;                             // value of greatest positive peak found during scan of derivative data
@@ -34,13 +38,13 @@ class SubPixel {
      
     //clear the sub-pixel buffers
     a1 = b1 = c1 = a2 = b2 = c2 = 0;
-    m1 = m2 = 0;
+    negPeakSubPixelLoc = posPeakSubPixelLoc = 0;
     
     // we should have already ran a gaussian smoothing routine over the data, and 
     // also already saved the 1st derivative of the smoothed data into an array.
     // Therefore, all we do here is find the peaks on the 1st derivative data.
 
-    for (int i = dataStartPos; i < dataStopPos - 1; i++) {
+    for (int i = loopStartPos; i < loopEndPos - 1; i++) {
     // find the the tallest positive and negative peaks in 1st derivative of the convolution output data, 
     // which is the point of steepest positive and negative slope in the smoothed original data.
       if (output2[i] > posPeak) {
@@ -75,34 +79,46 @@ class SubPixel {
       // sub-pixel edge detection using interpolation
       // from Accelerated Image Processing blog, posting: Sub-Pixel Maximum
       // https://visionexperts.blogspot.com/2009/03/sub-pixel-maximum.html
-      m1 = 0.5 * (a1 - c1) / (a1 - 2 * b1 + c1);
-      m2 = 0.5 * (a2 - c2) / (a2 - 2 * b2 + c2);
+      
+      // the subpixel location of a shadow edge is found as the peak of a parabola fitted to 
+      // the top 3 points of a smoothed original data's first derivative peak.
+      
+      // the first derivative is simply the differences between all adjacent data points,
+      // and is proportional to the steepness and direction of the slope in the original data.
+      
+      // for the subpixel value of the greatest negative peak found above, 
+      // corresponds with the left edge of a narrow shadow cast upon the sensor
+      negPeakSubPixelLoc = 0.5 * (a1 - c1) / (a1 - 2 * b1 + c1);
+      
+      // for the subpixel value of the greatest positive peak found above, 
+      // corresponds with the right edge of a narrow shadow cast upon the sensor
+      posPeakSubPixelLoc = 0.5 * (a2 - c2) / (a2 - 2 * b2 + c2);
 
       // original function translated from flipper's filament width sensor; does the same math calculation as above
-      // m1=((a1-c1) / (a1+c1-(b1*2)))/2;
-      // m2=((a2-c2) / (a2+c2-(b2*2)))/2;
+      // negPeakSubPixelLoc=((a1-c1) / (a1+c1-(b1*2)))/2;
+      // posPeakSubPixelLoc=((a2-c2) / (a2+c2-(b2*2)))/2;
 
-      preciseWidth = roughWidth + (m2 - m1); 
+      preciseWidth = roughWidth + (posPeakSubPixelLoc - negPeakSubPixelLoc); 
       preciseWidthMM = preciseWidth * sensorPixelSpacing;
 
-      precisePosition = (((negPeakLoc + m1) + (posPeakLoc + m2)) / 2);
+      // solve for the center position
+      precisePosition = (((negPeakLoc + negPeakSubPixelLoc) + (posPeakLoc + posPeakSubPixelLoc)) / 2);
+      
       preciseMMPos = precisePosition * sensorPixelSpacing;
 
-      dataStartPos = dataStartPos - (KERNEL_LENGTH+1);
-
        // sum of a few offsets, so we don't need to recalculate
-      shiftSumX =  0.5 + HALF_KERNEL_LENGTH + dataStartPos; 
+      shiftSumX =  0.5 + HALF_KERNEL_LENGTH - 1; 
 
-      // Mark m1 with red line
+      // Mark negPeakSubPixelLoc with red line
       noFill();
       strokeWeight(1);
       stroke(255, 0, 0);
-      XCoord = ((negPeakLoc + m1 - shiftSumX) * scale_x) + pan_x;
+      XCoord = ((negPeakLoc + negPeakSubPixelLoc - shiftSumX) * scale_x) + pan_x;
       line(XCoord, HALF_SCREEN_HEIGHT + subpixelMarkerLen, XCoord, HALF_SCREEN_HEIGHT - subpixelMarkerLen);
  
-      // Mark m2 with green line
+      // Mark posPeakSubPixelLoc with green line
       stroke(0, 255, 0);
-      XCoord = ((posPeakLoc + m2 - shiftSumX) * scale_x) + pan_x;
+      XCoord = ((posPeakLoc + posPeakSubPixelLoc - shiftSumX) * scale_x) + pan_x;
       line(XCoord, HALF_SCREEN_HEIGHT + subpixelMarkerLen, XCoord, HALF_SCREEN_HEIGHT - subpixelMarkerLen);
 
       // Mark subpixel center with white line
@@ -127,12 +143,12 @@ class SubPixel {
       textSize(14);
       //text("negPeakLoc = " + negPeakLoc, 0, YCoord);
       //text("posPeakLoc = " + posPeakLoc, 125, YCoord);
-      //text("m1 = " + String.format("%.3f", m1), 250, YCoord);
-      //text("m2 = " + String.format("%.3f", m2), 325, YCoord);
+      //text("negPeakSubPixelLoc = " + String.format("%.3f", negPeakSubPixelLoc), 250, YCoord);
+      //text("posPeakSubPixelLoc = " + String.format("%.3f", posPeakSubPixelLoc), 325, YCoord);
       text("preciseWidth = " + String.format("%.3f", preciseWidth), 100, YCoord);
-      text("preciseWidthMM =  " + String.format("%.3f", preciseWidthMM), 300, YCoord);
-      text("precisePosition = " + String.format("%.3f", precisePosition), 500, YCoord);
-      text("PreciseMMPos =  " + String.format("%.3f", preciseMMPos), 700, YCoord);
+      text("preciseWidthMM =  " + String.format("%.3f", preciseWidthMM), 275, YCoord);
+      text("precisePosition = " + String.format("%.3f", precisePosition), 475, YCoord);
+      text("PreciseMMPos =  " + String.format("%.3f", preciseMMPos), 675, YCoord);
     }
   }
 }

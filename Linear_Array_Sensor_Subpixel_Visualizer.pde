@@ -187,7 +187,7 @@ void setup() {
   KG1 = new KernelGenerator(kernelSource);
   
   // Choose a signal source :=====================================================================
-  // You are encouraged to try different signal sources, to see how the subpixel code behaves with perfect waveforms
+  // You are encouraged to try different signal sources, to see how the subpixel code behaves with nearly perfect waveforms
   signalSource = 3;
   // Create a dataPlot object, which plots data and provides mouse sliding and zooming ability
   SG1 = new SignalGenerator(signalSource);
@@ -255,7 +255,7 @@ void draw() {
   fill(255);
   
   // Counts 1 to 60 and repeats
-  text(chartRedraws, 10, 50); //<>//
+  text(chartRedraws, 10, 50); //<>// //<>//
 
   // Plot the Data
    DP1.display();
@@ -271,4 +271,4 @@ void mouseDragged() {
 
 void mouseWheel(MouseEvent event) {
   DP1.mouseWheel(-event.getCount()); // note the minus sign (-) inverts the mouse wheel output direction
-} //<>//
+} //<>// //<>//
