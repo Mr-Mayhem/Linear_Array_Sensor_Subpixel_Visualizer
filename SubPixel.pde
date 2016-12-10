@@ -118,15 +118,6 @@ class SubPixel {
       XCoord = ((precisePosition - shiftSumX) * scale_x) + pan_x;
       line(XCoord, HALF_SCREEN_HEIGHT + subpixelMarkerLen, XCoord, HALF_SCREEN_HEIGHT - subpixelMarkerLen); 
 
-      // store the 1st derivative values to simple variables
-      c1=output2[negPeakLoc+1];  // tallest negative peak array index location plus 1
-      b1=output2[negPeakLoc];    // tallest negative peak array index location
-      a1=output2[negPeakLoc-1];  // tallest negative peak array index location minus 1
-  
-      c2=output2[posPeakLoc+1];  // tallest positive peak array index location plus 1
-      b2=output2[posPeakLoc];    // tallest positive peak array index location
-      a2=output2[posPeakLoc-1];  // tallest positive peak array index location minus 1
-
       // Mark negPeakLoc 3 pixel cluster with one red circle each
       stroke(255, 0, 0);
       ellipse(((negPeakLoc - shiftSumX - 1) * scale_x) + pan_x, HALF_SCREEN_HEIGHT - (a1 * scale_y) + pan_y, markSize, markSize);
