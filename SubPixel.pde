@@ -142,14 +142,14 @@ class SubPixel {
       YCoord = SCREEN_HEIGHT-120;
       fill(255);
       textSize(14);
-      //text("negPeakLoc = " + negPeakLoc, 0, YCoord);
-      //text("posPeakLoc = " + posPeakLoc, 125, YCoord);
-      //text("negPeakSubPixelLoc = " + String.format("%.3f", negPeakSubPixelLoc), 250, YCoord);
-      //text("posPeakSubPixelLoc = " + String.format("%.3f", posPeakSubPixelLoc), 325, YCoord);
-      text("preciseWidth = " + String.format("%.3f", preciseWidth), 100, YCoord);
-      text("preciseWidthMM =  " + String.format("%.4f", preciseWidthMM), 275, YCoord);
+      //text("negPeakLoc: " + negPeakLoc, 0, YCoord);
+      //text("posPeakLoc: " + posPeakLoc, 125, YCoord);
+      //text("negPeakSubPixelLoc: " + String.format("%.3f", negPeakSubPixelLoc), 250, YCoord);
+      //text("posPeakSubPixelLoc: " + String.format("%.3f", posPeakSubPixelLoc), 325, YCoord);
+      text("preciseWidth: " + String.format("%.3f", preciseWidth), 150, YCoord);
+      text("Width mm: " + String.format("%.4f", preciseWidthMM), 325, YCoord);
       text("precisePosition = " + String.format("%.3f", precisePosition), 475, YCoord);
-      text("PreciseMMPos =  " + String.format("%.4f", preciseMMPos), 675, YCoord);
+      text("Center Position mm: " + String.format("%.4f", preciseMMPos), 675, YCoord);
     }
   }
 }

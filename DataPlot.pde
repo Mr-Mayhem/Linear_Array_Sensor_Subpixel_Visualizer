@@ -104,11 +104,11 @@ void mouseWheel(int step) {
     
     SP1.calculateSensorShadowPosition(pan_x, scale_x, pan_y, scale_y, wDataStartIndex, wDataStopIndex); // Subpixel calculation  
     
-    text("pan_x: " + String.format("%.3f", pan_x) + 
-    "  scale_x: " + String.format("%.3f", scale_x) + 
-    "  pan_y: " + String.format("%.3f", pan_y) + 
-    "  scale_y: " + String.format("%.3f", scale_y), 
-    HALF_SCREEN_WIDTH-200, 90);
+    //text("pan_x: " + String.format("%.3f", pan_x) + 
+    //"  scale_x: " + String.format("%.3f", scale_x) + 
+    //"  pan_y: " + String.format("%.3f", pan_y) + 
+    //"  scale_y: " + String.format("%.3f", scale_y), 
+    //HALF_SCREEN_WIDTH-200, 90);
   }
   
   void drawKernel(float pan_x, float scale_x, float pan_y, float scale_y){

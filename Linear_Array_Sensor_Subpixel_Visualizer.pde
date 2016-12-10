@@ -185,8 +185,11 @@ void setup() {
   KG1 = new KernelGenerator(kernelSource);
   
   // Choose a signal source :=====================================================================
-  // You are encouraged to try different signal sources, to see how the subpixel code behaves with nearly perfect waveforms
-  signalSource = 3;
+  // You are encouraged to try different signal sources, to see how the subpixel code behaves with 
+  // nearly perfect waveforms
+  signalSource = 2;
+  // =============================================================================================
+  
   // Create a dataPlot object, which plots data and provides mouse sliding and zooming ability
   SG1 = new SignalGenerator(signalSource);
   
