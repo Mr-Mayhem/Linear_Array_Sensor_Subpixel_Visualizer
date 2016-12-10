@@ -102,7 +102,7 @@ void mouseWheel(int step) {
       drawHeadFromSimulatedData(pan_x, scale_x, pan_y, scale_y, wDataStartIndex, wDataStopIndex);    // from 0 to SENSOR_PIXELS-1
     }
     
-    DrawTail(pan_x, scale_x, pan_y, scale_y, SENSOR_PIXELS, OUTPUT_DATA_LENGTH);  // from SENSOR_PIXELS to (SENSOR_PIXELS + KERNEL_LENGTH)-1
+    //DrawTail(pan_x, scale_x, pan_y, scale_y, SENSOR_PIXELS, OUTPUT_DATA_LENGTH);  // from SENSOR_PIXELS to (SENSOR_PIXELS + KERNEL_LENGTH)-1
     SP1.calculateSensorShadowPosition(pan_x, scale_x, pan_y, scale_y, wDataStartIndex, wDataStopIndex); // Subpixel calculation  
     
     text("pan_x: " + String.format("%.3f", pan_x) + 
@@ -136,10 +136,6 @@ void mouseWheel(int step) {
     for (outerPtrX = dataStartPos; outerPtrX < dataStopPos; outerPtrX++) {
     
       outerCount++; // lets us draw widthwise (x axis) on the screen, offset from the data array index
-      
-      // zero the output data, otherwise values accumulate  between frames, and indeed if you comment 
-      // this out, the 1st derivative plot looks quite trippy on the screen.
-      output[outerPtrX + KERNEL_LENGTH_MINUS1] = 0; 
 
       // receive serial port data into the input[] array
        
@@ -183,6 +179,9 @@ void mouseWheel(int step) {
       greyscaleBarMapped(drawPtrXLessK, scale_x, 11, output[outerPtrX]);
       
       // find 1st derivative of the convolved data, the difference between adjacent points in the input[] array
+      // zero the output data, otherwise values accumulate  between frames, and indeed if you comment 
+      // this out, the 1st derivative plot looks quite trippy on the screen.
+ 
       if (outerPtrX > 0){
         stroke(COLOR_DERIVATIVE1_OF_OUTPUT);
         output2[outerPtrX] = output[outerPtrX] - output[outerPtrX-1]; // the difference between adjacent points, called the 1st derivative
@@ -190,8 +189,10 @@ void mouseWheel(int step) {
         // draw section of greyscale bar showing the 'color' of output2 data values
         //void greyscaleBarMapped(float x, float scale_x, float y, float value) {
         greyscaleBarMappedAbs(drawPtrXLessKandD1, scale_x, 22, output2[outerPtrX]);
+        output[outerPtrX-1] = 0;
       }
     }
+    output[dataStopPos] = 0;
   }
   
   void drawHeadFromSimulatedData(float pan_x, float scale_x, float pan_y, float scale_y, int dataStartPos, int dataStopPos){
@@ -202,11 +203,7 @@ void mouseWheel(int step) {
     // increment the outer loop pointer from 0 to SENSOR_PIXELS-1
     for (outerPtrX = dataStartPos; outerPtrX < dataStopPos; outerPtrX++) {
     
-      outerCount++; // lets us draw widthwise (x axis) on the screen, offset from the data array index
-      
-      // zero the output data, otherwise values accumulate  between frames, and indeed if you comment 
-      // this out, the 1st derivative plot looks quite trippy on the screen.
-      output[outerPtrX + KERNEL_LENGTH_MINUS1] = 0; 
+      outerCount++; // lets us draw widthwise (x axis) on the screen, offset from the data array index 
       
       // input[] array is already populated by signal generator
       
@@ -252,66 +249,69 @@ void mouseWheel(int step) {
         point(drawPtrXLessKandD1, HALF_SCREEN_HEIGHT - (output2[outerPtrX] * scale_y) + pan_y);
         // draw section of greyscale bar showing the 'color' of output2 data values
         greyscaleBarMappedAbs(drawPtrXLessKandD1, scale_x, 22, output2[outerPtrX]);
+        output[outerPtrX-1] = 0;
       }
     }
+    output[dataStopPos] = 0;
   }
 
-  void DrawTail(float pan_x, float scale_x, float pan_y, float scale_y, int dataStartPos, int dataStopPos){
-    // this draws the last few pixels (half the kernel length) that exist in the convolution output array beyond 
-    // the original pixel count as a result of convolution. Since typical useful kernels are only 9 pixels in 
-    // length or so, we are talking only 4 pixels or so.
-    // We can ignore these last few pixels by commenting out this code from firing. I seperated this for
-    // sake of not needing to have guarding if statements for all pixels on the 'head' draw loop, which draws the 
-    // bulk of the pixels.
-    // This improves speed and efficiency by removing the overhead of some range-constraining if statements.
+  //void DrawTail(float pan_x, float scale_x, float pan_y, float scale_y, int dataStartPos, int dataStopPos){
+  //  // this draws the last few pixels (half the kernel length) that exist in the convolution output array beyond 
+  //  // the original pixel count as a result of convolution. Since typical useful kernels are only 9 pixels in 
+  //  // length or so, we are talking only 4 pixels or so.
+  //  // We can ignore these last few pixels by commenting out this code from firing. I seperated this for
+  //  // sake of not needing to have guarding if statements for all pixels on the 'head' draw loop, which draws the 
+  //  // bulk of the pixels.
+  //  // This improves speed and efficiency by removing the overhead of some range-constraining if statements.
   
-    // By the time you needed a kernel large enough where the pixels to be drawm at this step grew significant in number,
-    // you would be smoothing the data so much the subpixel code would be losing a lot of accuracy, so the number of
-    // skipped pixels at the end of the plot for which this function is responsible for drawing, 
-    // is likely to remain insignificant. In fact, this comment is becoming larger than the function which it describes, 
-    // so at this point you are probably thinking I should stop writing about now.
+  //  // By the time you needed a kernel large enough where the pixels to be drawm at this step grew significant in number,
+  //  // you would be smoothing the data so much the subpixel code would be losing a lot of accuracy, so the number of
+  //  // skipped pixels at the end of the plot for which this function is responsible for drawing, 
+  //  // is likely to remain insignificant. In fact, this comment is becoming larger than the function which it describes, 
+  //  // so at this point you are probably thinking I should stop writing about now.
   
-    int outerCount = SENSOR_PIXELS;
+  //  int outerCount = SENSOR_PIXELS;
     
-    // increment the outer loop pointer from SENSOR_PIXELS to (SENSOR_PIXELS + KERNEL_LENGTH)-1
-    for (outerPtrX = dataStartPos; outerPtrX < dataStopPos; outerPtrX++) { 
+  //  // increment the outer loop pointer from SENSOR_PIXELS to (SENSOR_PIXELS + KERNEL_LENGTH)-1
+  //  for (outerPtrX = dataStartPos; outerPtrX < dataStopPos; outerPtrX++) { 
       
-      outerCount++;
+  //    outerCount++;
       
-      // no need to zero the output data here, apparently. It always gets overwritten, not accumulated.
+  //    // println("output[" + outerPtrX + "]" +output[outerPtrX]);
       
-      // println("output[" + outerPtrX + "]" +output[outerPtrX]);
+  //    // the outer pointer to the data arrays
+  //    drawPtrX = (outerCount * scale_x) + pan_x;
       
-      // the outer pointer to the data arrays
-      drawPtrX = (outerCount * scale_x) + pan_x;
+  //    // shift left by half the kernel size to correct for convolution shift (dead-on correct for odd-size kernels)
+  //    drawPtrXLessK = ((outerCount - HALF_KERNEL_LENGTH) * scale_x) + pan_x;
       
-      // shift left by half the kernel size to correct for convolution shift (dead-on correct for odd-size kernels)
-      drawPtrXLessK = ((outerCount - HALF_KERNEL_LENGTH) * scale_x) + pan_x;
+  //    // shift left by half the kernel length and,
+  //    // shift left by half a data point increment for aligning all plots involving data of the 1st derivative 
+  //    // (differences between data points are drawn in-between, or phase shifted to the left by 0.5 increments.
+  //    // Note, this is a float to accomodate the fractional decimals. Processing accepts floats for screen coordinates,
+  //    // but you don't see any difference compared to an integer until you spread the data points out from one
+  //    // another on the screen in the X axis (the width related axis).
+  //    drawPtrXLessKandD1 = ((outerCount - HALF_KERNEL_LENGTH -0.5) * scale_x) + pan_x;
       
-      // shift left by half the kernel length and,
-      // shift left by half a data point increment for aligning all plots involving data of the 1st derivative 
-      // (differences between data points are drawn in-between, or phase shifted to the left by 0.5 increments.
-      // Note, this is a float to accomodate the fractional decimals. Processing accepts floats for screen coordinates,
-      // but you don't see any difference compared to an integer until you spread the data points out from one
-      // another on the screen in the X axis (the width related axis).
-      drawPtrXLessKandD1 = ((outerCount - HALF_KERNEL_LENGTH -0.5) * scale_x) + pan_x;
-      
-      // plot the output data
-      stroke(COLOR_TAIL);
-      point(drawPtrXLessK, HALF_SCREEN_HEIGHT-(output[outerPtrX] * scale_y) + pan_y);
+  //    // plot the output data
+  //    stroke(COLOR_TAIL);
+  //    point(drawPtrXLessK, HALF_SCREEN_HEIGHT-(output[outerPtrX] * scale_y) + pan_y);
       
      
-      // draw section of greyscale bar showing the 'color' of output data values
-      greyscaleBarMapped(drawPtrXLessK, scale_x, 11, output[outerPtrX]);
+  //    // draw section of greyscale bar showing the 'color' of output data values
+  //    greyscaleBarMapped(drawPtrXLessK, scale_x, 11, output[outerPtrX]);
     
-      // find 1st derivative of the convolved data, the difference between adjacent points in the input[] array
-      stroke(COLOR_DERIVATIVE1_OF_OUTPUT);
-      output2[outerPtrX] = output[outerPtrX] - output[outerPtrX-1];
-      point(drawPtrXLessKandD1, HALF_SCREEN_HEIGHT-(output2[outerPtrX] * scale_y) + pan_y);
-      // draw section of greyscale bar showing the 'color' of output2 data values
-      greyscaleBarMappedAbs(drawPtrXLessKandD1, scale_x, 22, output2[outerPtrX]);
-    }
-  }
+  //    // find 1st derivative of the convolved data, the difference between adjacent points in the input[] array
+  //    stroke(COLOR_DERIVATIVE1_OF_OUTPUT);
+  //    output2[outerPtrX] = output[outerPtrX] - output[outerPtrX-1];
+  //    point(drawPtrXLessKandD1, HALF_SCREEN_HEIGHT-(output2[outerPtrX] * scale_y) + pan_y);
+  //    // draw section of greyscale bar showing the 'color' of output2 data values
+  //    greyscaleBarMappedAbs(drawPtrXLessKandD1, scale_x, 22, output2[outerPtrX]);
+  //    output[outerPtrX-1] = 0;
+  //  }
+  //  output[dataStopPos-2] = 0;
+  //  output[dataStopPos-1] = 0;
+  //}
   
   void greyscaleBarMapped(float x, float scale_x, float y, float value) {
     

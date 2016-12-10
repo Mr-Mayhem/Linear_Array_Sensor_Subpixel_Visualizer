@@ -53,18 +53,18 @@ public class PanZoomX {
   private float maxLogScale = 10;
 
   private float logScale = 1;
-  private float scale_x = 1;
+  private float scale_x = (float) Math.pow(2, logScale);
   private float scale_y = 0.125;
   private float pan_x = 0;
   private float pan_y = 0;
-  private float maxpan_x = 0;
+  //private float maxpan_x = 0;
   //private float maxpan_y = 0;
   
   private PApplet p;
 
   public PanZoomX(PApplet p, int MaxPanX) {
     this.p = p;
-    maxpan_x = MaxPanX;
+    //maxpan_x = MaxPanX;
   }
 
   public void mouseDragged() {

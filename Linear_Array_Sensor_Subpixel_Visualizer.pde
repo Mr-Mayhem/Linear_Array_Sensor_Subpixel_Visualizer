@@ -270,5 +270,5 @@ void mouseDragged() {
 }
 
 void mouseWheel(MouseEvent event) {
-  DP1.mouseWheel(-event.getCount());
+  DP1.mouseWheel(-event.getCount()); // note the minus sign (-) inverts the mouse wheel output direction
 } //<>//
