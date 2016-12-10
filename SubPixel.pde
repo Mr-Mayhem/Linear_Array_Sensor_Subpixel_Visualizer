@@ -29,14 +29,6 @@ class SubPixel {
     negPeak = 0;                             // value of greatest negative peak found during scan of derivative data
     posPeak = 0;                             // value of greatest positive peak found during scan of derivative data
     
-    if (dataStartPos < 2){
-      dataStartPos = 2;
-    }
-    
-    if (dataStopPos < dataStartPos){
-      dataStopPos = dataStartPos;
-    }
-  
     negPeakLoc = dataStopPos; // one past the last pixel, to prevent false positives?
     posPeakLoc = dataStopPos; // one past the last pixel, to prevent false positives?
      
