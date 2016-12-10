@@ -103,7 +103,7 @@ void mouseWheel(int step) {
     }
     
     DrawTail(pan_x, scale_x, pan_y, scale_y, SENSOR_PIXELS, OUTPUT_DATA_LENGTH);  // from SENSOR_PIXELS to (SENSOR_PIXELS + KERNEL_LENGTH)-1
-    SP1.calcAndDisplaySensorShadowPos(pan_x, scale_x, pan_y, scale_y, wDataStartIndex, wDataStopIndex); // Subpixel calculation  
+    SP1.calculateSensorShadowPosition(pan_x, scale_x, pan_y, scale_y, wDataStartIndex, wDataStopIndex); // Subpixel calculation  
     
     text("pan_x: " + String.format("%.3f", pan_x) + 
     "  scale_x: " + String.format("%.3f", scale_x) + 
@@ -137,6 +137,10 @@ void mouseWheel(int step) {
     
       outerCount++; // lets us draw widthwise (x axis) on the screen, offset from the data array index
       
+      // zero the output data, otherwise values accumulate  between frames, and indeed if you comment 
+      // this out, the 1st derivative plot looks quite trippy on the screen.
+      output[outerPtrX + KERNEL_LENGTH_MINUS1] = 0; 
+
       // receive serial port data into the input[] array
        
       // Read a pair of bytes from the byte array, convert them into an integer, 
@@ -177,11 +181,11 @@ void mouseWheel(int step) {
      
       // draw section of greyscale bar showing the 'color' of output data values
       greyscaleBarMapped(drawPtrXLessK, scale_x, 11, output[outerPtrX]);
-    
+      
       // find 1st derivative of the convolved data, the difference between adjacent points in the input[] array
       if (outerPtrX > 0){
         stroke(COLOR_DERIVATIVE1_OF_OUTPUT);
-        output2[outerPtrX] = output[outerPtrX] - output[outerPtrX-1];
+        output2[outerPtrX] = output[outerPtrX] - output[outerPtrX-1]; // the difference between adjacent points, called the 1st derivative
         point(drawPtrXLessKandD1, HALF_SCREEN_HEIGHT - (output2[outerPtrX] * scale_y) + pan_y);
         // draw section of greyscale bar showing the 'color' of output2 data values
         //void greyscaleBarMapped(float x, float scale_x, float y, float value) {
@@ -199,6 +203,10 @@ void mouseWheel(int step) {
     for (outerPtrX = dataStartPos; outerPtrX < dataStopPos; outerPtrX++) {
     
       outerCount++; // lets us draw widthwise (x axis) on the screen, offset from the data array index
+      
+      // zero the output data, otherwise values accumulate  between frames, and indeed if you comment 
+      // this out, the 1st derivative plot looks quite trippy on the screen.
+      output[outerPtrX + KERNEL_LENGTH_MINUS1] = 0; 
       
       // input[] array is already populated by signal generator
       
@@ -269,6 +277,9 @@ void mouseWheel(int step) {
     for (outerPtrX = dataStartPos; outerPtrX < dataStopPos; outerPtrX++) { 
       
       outerCount++;
+      
+      // no need to zero the output data here, apparently. It always gets overwritten, not accumulated.
+      
       // println("output[" + outerPtrX + "]" +output[outerPtrX]);
       
       // the outer pointer to the data arrays

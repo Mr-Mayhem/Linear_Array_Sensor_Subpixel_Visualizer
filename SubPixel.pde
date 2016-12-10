@@ -8,13 +8,13 @@ class SubPixel {
   SubPixel () {
 
   }
-
-  void calcAndDisplaySensorShadowPos(float pan_x, float scale_x, float pan_y, float scale_y, int dataStartPos, int dataStopPos){
+  
+  void calculateSensorShadowPosition(float pan_x, float scale_x, float pan_y, float scale_y, int dataStartPos, int dataStopPos){
     
-    dataStartPos= dataStartPos + KERNEL_LENGTH;
+    dataStartPos = dataStartPos + KERNEL_LENGTH;
      
     int negPeak, posPeak;                    // peak values, y axis (height centric)
-    int negPeakLoc, posPeakLoc;              // array index of peak locations, x axis (width centric)
+    int negPeakLoc, posPeakLoc;              // array index locations of greatest negative & positive peak values in 1st derivative data
     float a1, b1, c1, a2, b2, c2;            // sub pixel quadratic interpolation input variables, 3 per D1 peak, one negative, one positive
     float m1, m2;                            // sub pixel quadratic interpolation output variables, 1 per D1 peak, one negative, one positive
     float preciseWidth = 0;                  // filament width is still here if you need it
@@ -25,6 +25,7 @@ class SubPixel {
     float shiftSumX = 0;                     // temporary variable for summing x shift values
     float XCoord = 0;                        // temporary variable for holding a screen X coordinate
     float YCoord = 0;                        // temporary variable for holding a screen Y coordinate
+    
     negPeak = 0;                             // value of greatest negative peak found during scan of derivative data
     posPeak = 0;                             // value of greatest positive peak found during scan of derivative data
     
@@ -47,21 +48,15 @@ class SubPixel {
     // also already saved the 1st derivative of the smoothed data into an array.
     // Therefore, all we do here is find the peaks on the 1st derivative data.
 
-    // find the the tallest negative peak in 1st derivative of the convolution output data, 
-    // which is the point of steepest negative slope
     for (int i = dataStartPos; i < dataStopPos - 1; i++) {
-      if (output2[i] < negPeak) {
-        negPeak = output2[i];
-        negPeakLoc = i;
-      }
-    }
-
-    // find the the tallest positive peak in 1st derivative of the convolution output data, 
-    // which is the point of steepest positive slope
-    for (int i = dataStartPos; i < dataStopPos - 1; i++) {
+    // find the the tallest positive and negative peaks in 1st derivative of the convolution output data, 
+    // which is the point of steepest positive and negative slope in the smoothed original data.
       if (output2[i] > posPeak) {
         posPeak = output2[i];
         posPeakLoc = i;
+      }else if (output2[i] < negPeak) {
+        negPeak = output2[i];
+        negPeakLoc = i;
       }
     }
 
@@ -103,7 +98,7 @@ class SubPixel {
 
       dataStartPos = dataStartPos - (KERNEL_LENGTH+1);
 
-      // sum of a few offsets, so we don't need to recalculate
+       // sum of a few offsets, so we don't need to recalculate
       shiftSumX =  0.5 + HALF_KERNEL_LENGTH + dataStartPos; 
 
       // Mark m1 with red line
@@ -122,6 +117,15 @@ class SubPixel {
       stroke(255);
       XCoord = ((precisePosition - shiftSumX) * scale_x) + pan_x;
       line(XCoord, HALF_SCREEN_HEIGHT + subpixelMarkerLen, XCoord, HALF_SCREEN_HEIGHT - subpixelMarkerLen); 
+
+      // store the 1st derivative values to simple variables
+      c1=output2[negPeakLoc+1];  // tallest negative peak array index location plus 1
+      b1=output2[negPeakLoc];    // tallest negative peak array index location
+      a1=output2[negPeakLoc-1];  // tallest negative peak array index location minus 1
+  
+      c2=output2[posPeakLoc+1];  // tallest positive peak array index location plus 1
+      b2=output2[posPeakLoc];    // tallest positive peak array index location
+      a2=output2[posPeakLoc-1];  // tallest positive peak array index location minus 1
 
       // Mark negPeakLoc 3 pixel cluster with one red circle each
       stroke(255, 0, 0);

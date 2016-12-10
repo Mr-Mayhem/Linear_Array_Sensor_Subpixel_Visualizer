@@ -71,7 +71,7 @@ public class PanZoomX {
     int mousex = p.mouseX;
     int pmousex = p.pmouseX;
     pan_x = pan_x + mousex - pmousex;
-    pan_x = constrain(pan_x, -maxpan_x * scale_x, (maxpan_x * scale_x) + maxpan_x);
+    //pan_x = constrain(pan_x, -maxpan_x * scale_x, (maxpan_x * scale_x) + maxpan_x);
     
     
     //int mousey = p.mouseY;
@@ -102,7 +102,7 @@ public class PanZoomX {
 
     int mousex = p.mouseX;
     pan_x = mousex + ((pan_x - mousex) * scale_x) / prevScale;
-    pan_x = constrain(pan_x, -maxpan_x * scale_x, (maxpan_x * scale_x) + maxpan_x);
+    //pan_x = constrain(pan_x, -maxpan_x * scale_x, (maxpan_x * scale_x) + maxpan_x);
   }
 
   private void moveByKey(float directionx) {

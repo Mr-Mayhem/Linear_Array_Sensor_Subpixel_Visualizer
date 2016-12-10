@@ -41,7 +41,7 @@ class SignalGenerator {
     
      //setInputRandomData(0.1); 
     
-    zeroOutputData();
+    //zeroOutputData();
     //output = new int[OUTPUT_DATA_LENGTH];
     
     //if(noiseInput > 100){

@@ -116,6 +116,7 @@ int HALF_SCREEN_HEIGHT;              // half the screen height, reduces division
 int OUTPUT_DATA_LENGTH;              // number of discrete values in the output array, set in setup()
   
 int KERNEL_LENGTH;                   // number of discrete values in the kernel array, set in setup() 
+int KERNEL_LENGTH_MINUS1;            // kernel length minus 1, used to reduce math in loops
 int HALF_KERNEL_LENGTH;              // Half the kernel length, used to correct convoltion phase shift
 int kernelDrawYOffset;               // height above bottom of screen to draw the kernel data points
   
@@ -166,7 +167,7 @@ void setup() {
   markSize = 3;
   
   // input to kernel creation function, controls spreading of gaussian kernel
-  gaussianKernelSigma = 1.5; 
+  gaussianKernelSigma = 1.6; 
   
   // input to kernel creation function, controls spreading of loG kernel
   loGKernelSigma = 1.0; 
@@ -258,7 +259,6 @@ void draw() {
 
   // Plot the Data
    DP1.display();
-   SG1.resetData();      // reset the pointer, new random data if used.
 }
 
 void keyPressed() {
