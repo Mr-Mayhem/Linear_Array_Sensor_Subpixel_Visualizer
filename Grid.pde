@@ -5,10 +5,10 @@ class Grid {
  
   }
   
-  void drawGrid(int gWidth, int gHeight, int divisor)
+  void drawGrid(float gWidth, float gHeight, float divisor, int panX)
   {
-    int widthSpace = gWidth/divisor;   // Number of Vertical Lines
-    int heightSpace = gHeight/divisor; // Number of Horozontal Lines
+    float widthSpace = gWidth/divisor;   // Number of Vertical Lines
+    float heightSpace = gHeight/divisor; // Number of Horozontal Lines
     
     strokeWeight(1);
     stroke(25,25,25); // White Color
@@ -21,5 +21,17 @@ class Grid {
      for(int w=0; w<gHeight; w+=heightSpace){
        line(0,w,gWidth,w);
      }
+  }
+}
+
+void drawGrid2(float startX, float stopX, float startY, float stopY, float spacingX, float spacingY) {
+  
+  strokeWeight(1);
+  stroke(25,25,25); // White Color
+  for (float x = startX; x <= stopX; x += spacingX) {
+    line(x, startY, x, stopY);
+  }
+  for (float y = startY; y <= stopY; y += spacingY) {
+    line(startX, y, stopX, y);
   }
 }

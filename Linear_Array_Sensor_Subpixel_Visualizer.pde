@@ -65,10 +65,12 @@ translated into Processing (java) by Douglas Mayhew
  2. Send a windowed section containing only the interesting data, rather than all the data.
  3. Auto-Calibration using drill bits, dowel pins, etc.
  4. Multiple angles of led lights shining on the target, so multiple exposures may be compared 
-    for additional subpixel accuracy
+    for additional subpixel accuracy, or a faster solution - multiple slits casting shadows 
+    and averaging the shadow subpixel positions.
  5. Add data window zoom and scrolling ***(Done!)***
  6. Add measurement history display
  7. Bringing the core of the position and subpixel code into Arduino for Teensy 3.6
+ 8. data averaging two or more frames or sub-frames (windowed processing)
 */
 // ==============================================================================================
 // imports:
@@ -94,12 +96,16 @@ final int HIGHEST_ADC_VALUE = int(pow(2.0, float(ADC_BIT_DEPTH))-1);
 
 // unique byte used to sync the filling of byteArray to the incoming serial stream
 final int PREFIX = 0xFF;
+
+final float sensorPixelSpacing = 0.0635;           // 63.5 microns
+final float sensorPixelsPerMM = 15.74803149606299; // number of pixels per mm in sensor TSL1402R and TSL1410R
+final float sensorWidthAllPixels = 16.256;         // millimeters
 // ==============================================================================================
 // Arrays:
 
 byte[] byteArray = new byte[0];      // array of raw serial data bytes
 int[] input = new int[0];            // array for input signal
-float[] kernel = new float[0];     // array for impulse response, or kernel
+float[] kernel = new float[0];       // array for impulse response, or kernel
 float[] output = new float[0];       // array for output signal
 float[] output2 = new float[0];      // array for output signal
 
@@ -213,7 +219,7 @@ void setup() {
   // set the screen dimensions
   surface.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);
   background(0);
-  
+  strokeWeight(1);
   // Create the dataPlot object, which handles plotting data with mouse sliding and zooming ability
   DP1 = new dataPlot(this, 0, 0, SCREEN_WIDTH, HALF_SCREEN_HEIGHT, SENSOR_PIXELS);
   
@@ -229,6 +235,7 @@ void setup() {
   if (signalSource == 3){
     noLoop();
     // Set up serial connection
+    // Set to your Teensy COM port number to fix error, make sure it talks to Arduino software if stuck.
     myPort = new Serial(this, "COM5", 12500000);
     // the serial port will buffer until prefix (unique byte that equals 255) and then fire serialEvent()
     myPort.bufferUntil(PREFIX);
