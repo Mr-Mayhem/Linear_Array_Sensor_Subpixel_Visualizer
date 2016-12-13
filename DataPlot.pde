@@ -45,7 +45,7 @@ class dataPlot {
   double preciseMMPos;        // canter position output in mm
   double widthInPixels;       // integer difference between the two peaks without subpixel precision
   double shiftSumX;           // temporary variable for summing x shift values
-  double calibrationCoefficient = 0;
+  double calibrationCoefficient = 0.9822050932057512;
   
   float x0, x1, x2, x3;       // temp variables which hold derivative values, used instead of another array
   float  XCoord;              // temporary variable for holding a screen X coordinate
@@ -429,7 +429,6 @@ class dataPlot {
       // posPeakSubPixelLoc=((a2-c2) / (a2+c2-(b2*2)))/2;
 
       preciseWidth = widthInPixels + (posPeakSubPixelLoc - negPeakSubPixelLoc);
-      calibrationCoefficient =  0.9822050932057512;
       preciseWidthMM = preciseWidth * sensorPixelSpacing * calibrationCoefficient;
      
       //println(calibrationCoefficient);
