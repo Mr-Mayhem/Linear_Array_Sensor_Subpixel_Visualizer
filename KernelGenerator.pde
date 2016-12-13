@@ -2,13 +2,26 @@ class KernelGenerator {
   // by Douglas Mayhew 12/1/2016
   // This class creates a kernel and saves it's data into an array
 
-// a menu of various one dimensional kernels, example: kernel = setArray(gaussian); 
-float [] gaussian = {0.0048150257, 0.028716037, 0.10281857, 0.22102419, 0.28525233, 0.22102419, 0.10281857, 0.028716037, 0.0048150257};
-// float [] sorbel = {1, 0, -1};
-// float [] gaussianLaplacian = {-7.474675E-4, -0.0123763615, -0.04307856, 0.09653235, 0.31830987, 0.09653235, -0.04307856, -0.0123763615, -7.474675E-4};
-// float [] laplacian = {1, -2, 1}; 
+  float gaussianKernelSigma;           // input to kernel creation function, controls spreading of gaussian kernel
+  float loGKernelSigma;                // input to kernel creation function, controls spreading of loG kernel
+  
+  // a menu of various one dimensional kernels, example: kernel = setArray(gaussian); 
+  float [] gaussian = {0.0048150257, 0.028716037, 0.10281857, 0.22102419, 0.28525233, 0.22102419, 0.10281857, 0.028716037, 0.0048150257};
+  // float [] sorbel = {1, 0, -1};
+  // float [] gaussianLaplacian = {-7.474675E-4, -0.0123763615, -0.04307856, 0.09653235, 0.31830987, 0.09653235, -0.04307856, -0.0123763615, -7.474675E-4};
+  // float [] laplacian = {1, -2, 1}; 
 
   KernelGenerator (int kernelsource) {
+  
+  // input to kernel creation function, controls spreading of gaussian kernel
+  // this is an important adjustment for subpixel accuracy
+  // too low and the noise creeps in and the peaks are not locally symmectrical (bad)
+  // too high, and the peaks get too far smoothed out and accuracy suffers as a result
+  gaussianKernelSigma = 1.4; 
+  
+  // input to kernel creation function, controls spreading of loG kernel
+  loGKernelSigma = 1.0;
+    
     switch (kernelsource) {
     case 0:
       // a dynamically created gaussian bell curve kernel

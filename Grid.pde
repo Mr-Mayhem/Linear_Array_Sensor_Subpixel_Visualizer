@@ -5,7 +5,7 @@ class Grid {
  
   }
   
-  void drawGrid(float gWidth, float gHeight, float divisor, int panX)
+  void drawGrid(float gWidth, float gHeight, float divisor)
   {
     float widthSpace = gWidth/divisor;   // Number of Vertical Lines
     float heightSpace = gHeight/divisor; // Number of Horozontal Lines

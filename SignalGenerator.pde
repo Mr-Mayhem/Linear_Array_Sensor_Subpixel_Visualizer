@@ -2,7 +2,17 @@ class SignalGenerator {
   // by Douglas Mayhew 12/1/2016
   // This class draws the legend
   
+  float noiseInput;                    // used for generating smooth noise for original data; lower values are smoother noise
+  float noiseIncrement;                // the increment of change of the noise input
+  
   SignalGenerator (int signalsource) {
+    
+  // used for generating smooth noise for original data; lower values are smoother noise
+  noiseInput = 0.05;
+
+  // the increment of change of the noise input
+  noiseIncrement = noiseInput;
+  
     switch (signalsource) {
       case 0: // hard-coded sensor data containing a shadow edge profile
         input = setHardCodedSensorData(); 
@@ -31,8 +41,8 @@ class SignalGenerator {
         SENSOR_PIXELS = input.length;
     }
     
-    // random noise option is commented out in resetData(), uncomment to set random data input
-
+      println("SENSOR_PIXELS = " + SENSOR_PIXELS);
+      // number of discrete values in the output array
   }
   
   void resetData(){
@@ -57,13 +67,6 @@ class SignalGenerator {
       // perlin noise
       input[c] = int(map(noise(noiseInput), 0, 1, 0, HIGHEST_ADC_VALUE * scale_y));  
       //println (noise(noiseInput));
-     }
-  }
-  
-  void zeroOutputData(){
-    
-    for (int c = 0; c < OUTPUT_DATA_LENGTH; c++){
-      output[c] = 0;
      }
   }
   

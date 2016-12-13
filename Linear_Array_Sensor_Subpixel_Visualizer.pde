@@ -106,8 +106,6 @@ final float sensorWidthAllPixels = 16.256;         // millimeters
 byte[] byteArray = new byte[0];      // array of raw serial data bytes
 int[] input = new int[0];            // array for input signal
 float[] kernel = new float[0];       // array for impulse response, or kernel
-float[] output = new float[0];       // array for output signal
-float[] output2 = new float[0];      // array for output signal
 
 // Global Variables:
 int signalSource;                    // selects a signal data source
@@ -117,23 +115,12 @@ int N_BYTES_PER_SENSOR_FRAME;        // we use 2 bytes to represent each sensor 
 int N_BYTES_PER_SENSOR_FRAME_PLUS1;  // the data bytes + the PREFIX byte
 int SCREEN_HEIGHT;                   // scales screen height relative to highest data value
 int HALF_SCREEN_HEIGHT;              // half the screen height, reduces division math work because it is used alot
-int OUTPUT_DATA_LENGTH;              // number of discrete values in the output array, set in setup()
-  
 int KERNEL_LENGTH;                   // number of discrete values in the kernel array, set in setup() 
 int KERNEL_LENGTH_MINUS1;            // kernel length minus 1, used to reduce math in loops
 int HALF_KERNEL_LENGTH;              // Half the kernel length, used to correct convoltion phase shift
-int kernelDrawYOffset;               // height above bottom of screen to draw the kernel data points
-  
-int markSize;                        // diameter of drawn subpixel marker circles
+int OUTPUT_DATA_LENGTH;              // number of discrete values in the output array, set in setup()
 int bytesRead;                       // number of bytes actually read out from the serial buffer
 int availableBytesDraw;              // used to show the number of bytes present in the serial buffer
-int subpixelMarkerLen;               // length of vertical lines which indicate subpixel peaks and shadow center location
-
-float gaussianKernelSigma;           // input to kernel creation function, controls spreading of gaussian kernel
-float loGKernelSigma;                // input to kernel creation function, controls spreading of loG kernel
-float kernelMultiplier;              // multiplies the plotted y values of the kernel, for greater visibility since they are small
-float noiseInput;                    // used for generating smooth noise for original data; lower values are smoother noise
-float noiseIncrement;                // the increment of change of the noise input
 
 // used to count sensor data frames
 int chartRedraws = 0;
@@ -151,7 +138,7 @@ KernelGenerator KG1; // Creates a kernel and saves it's data into an array
 // ==============================================================================================
 
 void setup() {
-// ==============================================================================================
+  // ============================================================================================
   // Set the data & screen scaling:
   // You are encouraged to adjust these, especially to 'zoom in' to the shadow location see the subpixel details better.
   
@@ -161,39 +148,14 @@ void setup() {
   // leave alone! Used in many places to center data at middle height
   HALF_SCREEN_HEIGHT = SCREEN_HEIGHT / 2;
   
-  // sets height deviation of vertical lines from center height, indicates subpixel peaks and shadow center location
-  subpixelMarkerLen = int(SCREEN_HEIGHT * 0.01);  
-                      
-  // height above bottom of screen to draw the kernel data points                                      
-  kernelDrawYOffset = 75;
-  
-  // diameter of drawn subpixel marker circles
-  markSize = 3;
-  
-  // input to kernel creation function, controls spreading of gaussian kernel
-  // this is an important adjustment for subpixel accuracy
-  // too low and the noise creeps in and the peaks are not locally symmectrical (bad)
-  // too high, and the peaks get too far smoothed out and accuracy suffers as a result
-  gaussianKernelSigma = 1.4; 
-  
-  // input to kernel creation function, controls spreading of loG kernel
-  loGKernelSigma = 1.0; 
-  
-  // multiplies the plotted y values of the kernel, for greater visibility since they are small
-  kernelMultiplier = 100.0;
-
-  // used for generating smooth noise for original data; lower values are smoother noise
-  noiseInput = 0.05;
-
-  // the increment of change of the noise input
-  noiseIncrement = noiseInput;
-  
-  // Choose a kernel source: =====================================================================
+  // ============================================================================================
+  // Choose a kernel source:
   kernelSource = 0;
   // Create a kernelGenerator object, which creates a kernel and saves it's data into an array
   KG1 = new KernelGenerator(kernelSource);
   
-  // Choose a signal source :=====================================================================
+  // ============================================================================================
+  // Choose a signal source:
   // You are encouraged to try different signal sources, to see how the subpixel code behaves with 
   // nearly perfect waveforms
   signalSource = 3;
@@ -202,18 +164,8 @@ void setup() {
   // Create a dataPlot object, which plots data and provides mouse sliding and zooming ability
   SG1 = new SignalGenerator(signalSource);
   
-  println("SENSOR_PIXELS = " + SENSOR_PIXELS);
-  
-  // number of discrete values in the output array
-  OUTPUT_DATA_LENGTH = SENSOR_PIXELS + KERNEL_LENGTH-1;
-  println("OUTPUT_DATA_LENGTH = " + OUTPUT_DATA_LENGTH);
-  
-  // arrays for output signals, get resized after kernel size is known
-  output = new float[OUTPUT_DATA_LENGTH];
-  output2 = new float[OUTPUT_DATA_LENGTH];
-  
   // the data length times the number of pixels per data point
-  SCREEN_WIDTH = 1024;//OUTPUT_DATA_LENGTH * SCALE_X;
+  SCREEN_WIDTH = 1024; //OUTPUT_DATA_LENGTH * SCALE_X;
   HALF_SCREEN_WIDTH = SCREEN_WIDTH / 2;
   
   // set the screen dimensions
@@ -269,7 +221,6 @@ void draw() {
 
   // Plot the Data
    DP1.display();
-   SG1.zeroOutputData();
 }
 
 void keyPressed() {

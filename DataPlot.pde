@@ -2,24 +2,27 @@ class dataPlot {
   // by Douglas Mayhew 12/1/2016
   // Plots data and provides mouse sliding and zooming ability
   
-  int dpXpos;
+  int dpXpos;              // dataPlot class init variables
   int dpYpos;
   int dpWidth;
   int dpHeight;
   int dpDataLen;
   
-  int wDataStartPos;    // the index of the first data point
-  int wDataStopPos;     // the index of the last data point
+  float kernelMultiplier; // multiplies the plotted y values of the kernel, for greater visibility since they are small
+  int kernelDrawYOffset;               // height above bottom of screen to draw the kernel data points
+
+  int wDataStartPos;      // the index of the first data point
+  int wDataStopPos;       // the index of the last data point
   
-  int outerPtrX = 0;    // outer loop pointer
-  int innerPtrX = 0;    // inner loop pointer for convolution
+  int outerPtrX = 0;      // outer loop pointer
+  int innerPtrX = 0;      // inner loop pointer for convolution
   
-  float pan_x;
+  float pan_x;            // local copies of variables from PanZoom object
   float scale_x;
   float pan_y;
   float scale_y;
   
-  // phase correction drawing pointers
+                          // phase correction drawing pointers
   float drawPtrX = 0;
   float drawPtrXLessK = 0;
   float drawPtrXLessKandD1 = 0;
@@ -28,6 +31,8 @@ class dataPlot {
   // Subpixel Variables
   int negPeakLoc;             // array index location of greatest negative peak value in 1st difference data
   int posPeakLoc;             // array index location of greatest positive peak value in 1st difference data
+  int markSize;               // diameter of drawn subpixel marker circles
+  int subpixelMarkerLen;      // length of vertical lines which indicate subpixel peaks and shadow center location
   double negPeakVal;          // value of greatest negative peak in 1st difference data, y axis (height centric)
   double posPeakVal;          // value of greatest positivefloat( peak in 1st difference data, y axis (height centric)
   double a1, b1, c1;          // sub pixel quadratic interpolation input variables for negative difference peak
@@ -38,12 +43,19 @@ class dataPlot {
   double preciseWidthMM;      // filament width output in mm
   double precisePosition;     // center position output in pixels
   double preciseMMPos;        // canter position output in mm
-  double roughWidth;          // integer difference between the two peaks without subpixel precision
+  double widthInPixels;       // integer difference between the two peaks without subpixel precision
   double shiftSumX;           // temporary variable for summing x shift values
-  double XCoord;              // temporary variable for holding a screen X coordinate
+  double calibrationCoefficient = 0;
+  
+  float x0, x1, x2, x3;       // temp variables which hold derivative values, used instead of another array
+  float  XCoord;              // temporary variable for holding a screen X coordinate
   float  YCoord;              // temporary variable for holding a screen Y coordinate
   // =============================================================================================
+  //Arrays
   
+  float[] output = new float[0];       // array for output signal
+  
+  // =============================================================================================
   Legend Legend1;             // One Legend object, lists the colors and what they represent
   Grid Grid1;                 // One Grid object, draws a grid
   PanZoomX PZX1;              // pan/zoom object, integer-based for speed
@@ -61,6 +73,23 @@ class dataPlot {
     scale_x = PZX1.getScaleX();
     pan_y = PZX1.getPanY();
     scale_y = PZX1.getScaleY();
+    
+    // multiplies the plotted y values of the kernel, for greater height visibility since the values in typical kernels are so small
+    kernelMultiplier = 100.0;
+    
+    // height above bottom of screen to draw the kernel data points                                      
+    kernelDrawYOffset = 75; 
+    
+    // diameter of drawn subpixel marker circles
+    markSize = 3;
+    
+    // sets height deviation of vertical lines from center height, indicates subpixel peaks and shadow center location
+    subpixelMarkerLen = int(SCREEN_HEIGHT * 0.01);  
+                      
+    OUTPUT_DATA_LENGTH = SENSOR_PIXELS + KERNEL_LENGTH-1;
+    println("OUTPUT_DATA_LENGTH = " + OUTPUT_DATA_LENGTH);
+    // arrays for output signals, get resized after kernel size is known
+    output = new float[OUTPUT_DATA_LENGTH];
     
     // create the Legend object, which lists the colors and what they represent
     Legend1 = new Legend(); 
@@ -109,12 +138,11 @@ class dataPlot {
     
     wDataStartPos = 0;
     wDataStopPos = dpDataLen;
-    
     //wDataStartIndex = constrain(wDataStartIndex, 0, wDataLen);
     //wDataStopIndex = constrain(wDataStopIndex, 0, wDataLen);
     
     // draw grid, legend, and kernel
-    //Grid1.drawGrid(SCREEN_WIDTH, SCREEN_HEIGHT, 32/scale_x, int(pan_x));
+    //Grid1.drawGrid(SCREEN_WIDTH, SCREEN_HEIGHT, 32/scale_x);
     
     //drawGrid2(pan_x, (wDataLen * scale_x) + pan_x, 0, height + pan_y, 64 * scale_x, 256 * scale_y);
     
@@ -133,8 +161,16 @@ class dataPlot {
     text("Use mouse to drag, mouse wheel to zoom", HALF_SCREEN_WIDTH-150, 90);
     
     text("pan_x: " + String.format("%.3f", pan_x) + 
-    "  scale_x: " + String.format("%.3f", scale_x), 
+    "  scale_x: " + String.format("%.3f", scale_x),
     50, 50);
+    zeroOutputData();
+  }
+  
+  void zeroOutputData(){
+    
+    for (int c = 0; c < OUTPUT_DATA_LENGTH; c++){
+      output[c] = 0;
+     }
   }
   
   void drawKernel(float pan_x, float scale_x, float pan_y, float scale_y){
@@ -156,6 +192,11 @@ class dataPlot {
   
     int outerCount = 0;
     
+    negPeakLoc = wDataStopPos; // one past the last pixel, to prevent false positives?
+    posPeakLoc = wDataStopPos; // one past the last pixel, to prevent false positives?
+    negPeakVal = 0;
+    posPeakVal = 0;
+
     // increment the outer loop pointer from 0 to SENSOR_PIXELS-1
     for (outerPtrX = wDataStartPos; outerPtrX < wDataStopPos; outerPtrX++) {
     
@@ -203,13 +244,32 @@ class dataPlot {
       // find 1st difference of the convolved data, the difference between adjacent points in the input[] array.
       // We skip the first KERNEL_LENGTH of convolution output data, which is garbage from smoothing convolution 
       // kernel not being fully immersed in the input signal data.
-     if (outerPtrX > KERNEL_LENGTH_MINUS1) {
-        output2[outerPtrX] = output[outerPtrX] - output[outerPtrX-1]; // the difference between adjacent points, called the 1st difference
+     if (outerPtrX > KERNEL_LENGTH_MINUS1) {  // minus one because index starts at zero
+        x3=x2; // y value @ x index -3
+        x2=x1; // y value @ x index -2
+        x1=x0; // y value @ x index -1
+        x0 = output[outerPtrX] - output[outerPtrX-1]; // the difference between adjacent points, called the 1st difference
+        
         stroke(COLOR_FIRST_DIFFERENCE_OF_OUTPUT);
-        point(drawPtrXLessKandD1, HALF_SCREEN_HEIGHT - (output2[outerPtrX] * scale_y) + pan_y);
+        point(drawPtrXLessKandD1, HALF_SCREEN_HEIGHT - (x0 * scale_y) + pan_y);
         // draw section of greyscale bar showing the 'color' of output2 data values
         //void greyscaleBarMapped(float x, float scale_x, float y, float value) {
-        greyscaleBarMappedAbs(drawPtrXLessKandD1, scale_x, 22, output2[outerPtrX]);
+        greyscaleBarMappedAbs(drawPtrXLessKandD1, scale_x, 22, x0);
+        // find the the tallest positive and negative peaks in 1st difference of the convolution output data, 
+        // which is the point of steepest positive and negative slope in the smoothed original data
+        if (x2 > posPeakVal) {
+          posPeakLoc = outerPtrX-2; // x index -2
+          c2=x1; // y value @ x index -1
+          b2=x2; // y value @ x index -2 (positive 1st difference peak location)
+          a2=x3; // y value @ x index -3
+          posPeakVal = x2;
+        }else if (x2 < negPeakVal) {
+          negPeakLoc = outerPtrX-2; // x index -2
+          c1=x1; // y value @ x index -1
+          b1=x2; // y value @ x index -2 (negative 1st difference peak location)
+          a1=x3; // y value @ x index -3
+          negPeakVal = x2;
+        }
       }
     }
   }
@@ -217,7 +277,7 @@ class dataPlot {
   void processData(){
     
     int outerCount = 0;
-    
+
     // increment the outer loop pointer from 0 to SENSOR_PIXELS-1
     for (outerPtrX = wDataStartPos; outerPtrX < wDataStopPos; outerPtrX++) {
     
@@ -260,13 +320,32 @@ class dataPlot {
       // find 1st difference of the convolved data, the difference between adjacent points in the input[] array.
       // We skip the first KERNEL_LENGTH of convolution output data, which is garbage from smoothing convolution 
       // kernel not being fully immersed in the input signal data.
-     if (outerPtrX > KERNEL_LENGTH_MINUS1) {
-        output2[outerPtrX] = output[outerPtrX] - output[outerPtrX-1]; // the difference between adjacent points, called the 1st difference
+     if (outerPtrX > KERNEL_LENGTH_MINUS1) {  // minus one because index starts at zero
+        x3=x2; // y value @ x index -3
+        x2=x1; // y value @ x index -2
+        x1=x0; // y value @ x index -1
+        x0 = output[outerPtrX] - output[outerPtrX-1]; // the difference between adjacent points, called the 1st difference
+        
         stroke(COLOR_FIRST_DIFFERENCE_OF_OUTPUT);
-        point(drawPtrXLessKandD1, HALF_SCREEN_HEIGHT - (output2[outerPtrX] * scale_y) + pan_y);
+        point(drawPtrXLessKandD1, HALF_SCREEN_HEIGHT - (x0 * scale_y) + pan_y);
         // draw section of greyscale bar showing the 'color' of output2 data values
         //void greyscaleBarMapped(float x, float scale_x, float y, float value) {
-        greyscaleBarMappedAbs(drawPtrXLessKandD1, scale_x, 22, output2[outerPtrX]);
+        greyscaleBarMappedAbs(drawPtrXLessKandD1, scale_x, 22, x0);
+        // find the the tallest positive and negative peaks in 1st difference of the convolution output data, 
+        // which is the point of steepest positive and negative slope in the smoothed original data
+        if (x2 > posPeakVal) {
+          posPeakLoc = outerPtrX-2; // x index -2
+          c2=x1; // y value @ x index -1
+          b2=x2; // y value @ x index -2 (positive 1st difference peak location)
+          a2=x3; // y value @ x index -3
+          posPeakVal = x2;
+        }else if (x2 < negPeakVal) {
+          negPeakLoc = outerPtrX-2; // x index -2
+          c1=x1; // y value @ x index -1
+          b1=x2; // y value @ x index -2 (negative 1st difference peak location)
+          a1=x3; // y value @ x index -3
+          negPeakVal = x2;
+        }
       }
     }
   }
@@ -298,9 +377,11 @@ class dataPlot {
   
   void calculateSensorShadowPosition(){
     
-    // sub-pixel edge detection using interpolation
-    // from Accelerated Image Processing blog, posting: Sub-Pixel Maximum
-    // https://visionexperts.blogspot.com/2009/03/sub-pixel-maximum.html
+    // we should have already ran a gaussian smoothing routine over the data, and 
+    // found the x location and y values for the positive and negative peaks of the first differences,
+    // and the neighboring first differences immediately to the left and right of these on the x axis.
+    // Therefore, all we have remaining to do, is the quadratic interpolation routines and the actual 
+    // drawing, after a quality check of the peak heights and width between them.
     
     // the subpixel location of a shadow edge is found as the peak of a parabola fitted to 
     // the top 3 points of a smoothed original data's first difference peak.
@@ -314,56 +395,27 @@ class dataPlot {
     // more symmectrical and rounded, and thus closer to the shape of a parabola, which we fit to 
     // the peaks next. The more the highest (or lowest for negative peaks) 3 points of the peaks 
     // resemble a parabola, the more accurate the subpixel result.
-      
-    negPeakLoc = wDataStopPos; // one past the last pixel, to prevent false positives?
-    posPeakLoc = wDataStopPos; // one past the last pixel, to prevent false positives?
-    
-    negPeakVal = 0;
-    posPeakVal = 0;
+     
     preciseWidth = 0;
     precisePosition = 0;
-    
-    //clear the sub-pixel buffers
-    a1 = b1 = c1 = a2 = b2 = c2 = 0;
-    
     negPeakSubPixelLoc = 0;
     posPeakSubPixelLoc = 0;
     
-    // we should have already ran a gaussian smoothing routine over the data, and 
-    // also already saved the 1st difference of the smoothed data into an array.
-    // Therefore, all we do here is find the peaks on the 1st difference data.
-
-    for (int i = wDataStartPos; i < wDataStopPos; i++) {
-    // find the the tallest positive and negative peaks in 1st difference of the convolution output data, 
-    // which is the point of steepest positive and negative slope in the smoothed original data.
-      if (output2[i] > posPeakVal) {
-        posPeakVal = output2[i];
-        posPeakLoc = i;
-      }else if (output2[i] < negPeakVal) {
-        negPeakVal = output2[i];
-        negPeakLoc = i;
-      }
-    }
-
-    // store the 1st difference values to simple variables
-    c1=output2[negPeakLoc+1];  // tallest negative peak array index location plus 1
-    b1=output2[negPeakLoc];    // tallest negative peak array index location
-    a1=output2[negPeakLoc-1];  // tallest negative peak array index location minus 1
-
-    c2=output2[posPeakLoc+1];  // tallest positive peak array index location plus 1
-    b2=output2[posPeakLoc];    // tallest positive peak array index location
-    a2=output2[posPeakLoc-1];  // tallest positive peak array index location minus 1
-
     if (negPeakVal<-64 && posPeakVal>64) // check for significant threshold
     {
-      roughWidth=posPeakLoc-negPeakLoc;
+      widthInPixels=posPeakLoc-negPeakLoc;
     } else 
     {
-      roughWidth=0;
+      widthInPixels=0;
     }
 
-    // check for width out of range (15.7pixels per mm, 65535/635=103)
-    if(roughWidth > 8 && roughWidth < 103) {
+    // check for width in acceptable range, what is acceptable is up to you, within reason.
+    if(widthInPixels > 8 && widthInPixels < 512) { // was originally 103 for filiment width app, (15.7pixels per mm, 65535/635=103)
+      
+      // sub-pixel edge detection using interpolation
+      // from Accelerated Image Processing blog, posting: Sub-Pixel Maximum
+      // https://visionexperts.blogspot.com/2009/03/sub-pixel-maximum.html
+      
       // for the subpixel value of the greatest negative peak found above, 
       // corresponds with the left edge of a narrow shadow cast upon the sensor
       negPeakSubPixelLoc = 0.5 * (a1 - c1) / (a1 - 2 * b1 + c1);
@@ -376,9 +428,12 @@ class dataPlot {
       // negPeakSubPixelLoc=((a1-c1) / (a1+c1-(b1*2)))/2;
       // posPeakSubPixelLoc=((a2-c2) / (a2+c2-(b2*2)))/2;
 
-      preciseWidth = roughWidth + (posPeakSubPixelLoc - negPeakSubPixelLoc); 
-      preciseWidthMM = preciseWidth * sensorPixelSpacing;
-
+      preciseWidth = widthInPixels + (posPeakSubPixelLoc - negPeakSubPixelLoc);
+      calibrationCoefficient =  0.9822050932057512;
+      preciseWidthMM = preciseWidth * sensorPixelSpacing * calibrationCoefficient;
+     
+      //println(calibrationCoefficient);
+      
       // solve for the center position
       precisePosition = (((negPeakLoc + negPeakSubPixelLoc) + (posPeakLoc + posPeakSubPixelLoc)) / 2);
       
@@ -391,18 +446,18 @@ class dataPlot {
       noFill();
       strokeWeight(1);
       stroke(255, 0, 0);
-      XCoord = ((negPeakLoc + negPeakSubPixelLoc - shiftSumX) * scale_x) + pan_x;
-      line((float) XCoord, HALF_SCREEN_HEIGHT + subpixelMarkerLen, (float) XCoord, HALF_SCREEN_HEIGHT - subpixelMarkerLen);
+      XCoord = (float)((negPeakLoc + negPeakSubPixelLoc - shiftSumX) * scale_x) + pan_x;
+      line(XCoord, HALF_SCREEN_HEIGHT + subpixelMarkerLen, XCoord, HALF_SCREEN_HEIGHT - subpixelMarkerLen);
  
       // Mark posPeakSubPixelLoc with green line
       stroke(0, 255, 0);
-      XCoord = ((posPeakLoc + posPeakSubPixelLoc - shiftSumX) * scale_x) + pan_x;
-      line((float) XCoord, HALF_SCREEN_HEIGHT + subpixelMarkerLen, (float) XCoord, HALF_SCREEN_HEIGHT - subpixelMarkerLen);
+      XCoord = (float)((posPeakLoc + posPeakSubPixelLoc - shiftSumX) * scale_x) + pan_x;
+      line(XCoord, HALF_SCREEN_HEIGHT + subpixelMarkerLen, XCoord, HALF_SCREEN_HEIGHT - subpixelMarkerLen);
 
       // Mark subpixel center with white line
       stroke(255);
-      XCoord = ((precisePosition - shiftSumX) * scale_x) + pan_x;
-      line((float) XCoord, HALF_SCREEN_HEIGHT + subpixelMarkerLen, (float) XCoord, HALF_SCREEN_HEIGHT - subpixelMarkerLen); 
+      XCoord = (float)((precisePosition - shiftSumX) * scale_x) + pan_x;
+      line(XCoord, HALF_SCREEN_HEIGHT + subpixelMarkerLen, XCoord, HALF_SCREEN_HEIGHT - subpixelMarkerLen); 
 
       // Mark negPeakLoc 3 pixel cluster with one red circle each
       stroke(255, 0, 0);
@@ -416,6 +471,7 @@ class dataPlot {
       ellipse((float) ((posPeakLoc - shiftSumX) * scale_x) + pan_x,  (float) (HALF_SCREEN_HEIGHT - (b2 * scale_y) + pan_y), markSize, markSize);
       ellipse((float) ((posPeakLoc - shiftSumX + 1) * scale_x) + pan_x,  (float) (HALF_SCREEN_HEIGHT - (c2 * scale_y) + pan_y), markSize, markSize);
       
+      XCoord = HALF_SCREEN_WIDTH;
       YCoord = SCREEN_HEIGHT-120;
       fill(255);
       textSize(14);
@@ -423,10 +479,10 @@ class dataPlot {
       //text("posPeakLoc: " + posPeakLoc, 125, YCoord);
       //text("negPeakSubPixelLoc: " + String.format("%.3f", negPeakSubPixelLoc), 250, YCoord);
       //text("posPeakSubPixelLoc: " + String.format("%.3f", posPeakSubPixelLoc), 325, YCoord);
-      text("Pixel Width: " + String.format("%.3f", preciseWidth), 150, YCoord);
-      text("Pixel Position = " + String.format("%.3f", precisePosition), 325, YCoord);
-      text("Width mm: " + String.format("%.5f", preciseWidthMM), 525, YCoord);
-      text("Center Position mm: " + String.format("%.5f", preciseMMPos), 675, YCoord);
+      text("Width in Pixels: " + String.format("%.3f", preciseWidth), XCoord - 450, YCoord);
+      text("Position in Pixels = " + String.format("%.3f", precisePosition), XCoord - 250, YCoord);
+      text("Width mm: " + String.format("%.5f", preciseWidthMM), XCoord + 75, YCoord);
+      text("Position mm: " + String.format("%.5f", preciseMMPos), XCoord + 250, YCoord);
     }
   }
 }
