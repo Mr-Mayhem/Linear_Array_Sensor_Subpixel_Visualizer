@@ -33,7 +33,7 @@ class dataPlot {
   int markSize;               // diameter of drawn subpixel marker circles
   int subpixelMarkerLen;      // length of vertical lines which indicate subpixel peaks and shadow center location
   double negPeakVal;          // value of greatest negative y difference peak found in 1st difference data
-  double posPeakVal;          // value of greatest positive y difference peak dound in 1st difference data 
+  double posPeakVal;          // value of greatest positive y difference peak found in 1st difference data 
   double a1, b1, c1;          // sub pixel quadratic interpolation negative y difference peak and left/right neighbors
   double a2, b2, c2;          // sub pixel quadratic interpolation positive y difference peak and left/right neighbors
   double negPeakSubPixelLoc;  // quadratic interpolated negative peak subpixel x position; 
