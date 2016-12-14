@@ -143,9 +143,8 @@ class dataPlot {
     scale_y = PZX1.getScaleY();
 
 
-    // The minimum number of input data samples is two times the kernel length, (we ignore 
-    // the fist and last kernel lengths of data), + 1, which would result in the minumum of only one sample 
-    // processed. 
+    // The minimum number of input data samples is two times the kernel length + 1,  which results in 
+    // the minumum of only one sample processed. (we ignore the fist and last data by one kernel's width)
     
     wDataStartPos = 0;
     wDataStopPos = dpDataLen;
