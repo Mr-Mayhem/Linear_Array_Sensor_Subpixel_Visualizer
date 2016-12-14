@@ -1,7 +1,7 @@
 class KernelGenerator {
   // by Douglas Mayhew 12/1/2016
   // This class creates a kernel and saves it's data into an array
-
+  float sigma;
   float gaussianKernelSigma;           // input to kernel creation function, controls spreading of gaussian kernel
   float loGKernelSigma;                // input to kernel creation function, controls spreading of loG kernel
   
@@ -17,7 +17,7 @@ class KernelGenerator {
   // this is an important adjustment for subpixel accuracy
   // too low and the noise creeps in and the peaks are not locally symmectrical (bad)
   // too high, and the peaks get too far smoothed out and accuracy suffers as a result
-  gaussianKernelSigma = 1.4; 
+  gaussianKernelSigma = 1.2; 
   
   // input to kernel creation function, controls spreading of loG kernel
   loGKernelSigma = 1.0;
@@ -25,14 +25,22 @@ class KernelGenerator {
     switch (kernelsource) {
     case 0:
       // a dynamically created gaussian bell curve kernel
+      sigma = gaussianKernelSigma;
       kernel = makeGaussKernel1d(gaussianKernelSigma); 
       break;
     case 1:
       // a hard-coded gaussian kernel
+      sigma = 1.4;
       kernel = setArray(gaussian);
+      break;
+    case 2:
+      // a loGKernelSigma kernel
+      sigma = loGKernelSigma;
+      kernel = createLoGKernal1d(loGKernelSigma);
       break;
     default:
       // a hard-coded gaussian kernel, hard to mess up.
+      sigma = 1.4;
       kernel = setArray(gaussian);
   }
   
@@ -99,20 +107,20 @@ class KernelGenerator {
     int center = (int) (3.0 * sigma);
     // using a double internally for greater precision
     // set to an odd value for an even integer phase offset
-    double[] kernel = new double [2*center+1]; 
+    double[] kernel = new double [2 * center + 1]; 
     // using a float for the final return value
-    float[] fkernel = new float [2*center+1];
+    float[] fkernel = new float [2 * center + 1];
     
     // fill the kernel
     double sigmaSquared = sigma * sigma;
     for (int i=0; i<kernel.length; i++) {
       double r = center - i;
-      kernel[i] = (double) Math.exp(-0.5 * (r*r)/ sigmaSquared);
+      kernel[i] = (double) Math.exp(-0.5 * (r * r) / sigmaSquared);
       sum += kernel[i];
       //println("gaussian kernel[" + i + "] = " + kernel[i]);
     }
     
-    if (sum!=0.0){
+    if (sum!= 0.0){
       scale = 1.0/sum;
     } else {
       scale = 1;
@@ -126,24 +134,24 @@ class KernelGenerator {
       fkernel[i] = (float) kernel[i];
       sum += kernel[i];
       // print the kernel value.
-     // println("scaled gaussian kernel[" + i + "]:" + fkernel[i]); 
+      println("scaled gaussian kernel[" + i + "]:" + fkernel[i]); 
     }
     
-    if (sum!=0.0){
-      scale = 1.0/sum;
+    if (sum!= 0.0){
+      scale = 1.0 / sum;
     } else {
       scale = 1;
     }
     
     // print the new scale. Should be very close to 1.
-    //println("gaussian kernel new scale = " + scale); 
+    println("gaussian kernel new scale = " + scale); 
     return fkernel;
   }
   
   float[] createLoGKernal1d(float deviation) {
     
     int center = (int) (4 * deviation);
-    int kSize = 2*center+1; // set to an odd value for an even integer phase offset
+    int kSize = 2 * center + 1; // set to an odd value for an even integer phase offset
     // using a double internally for greater precision
     double[] kernel = new double[kSize];
     // using a double for the final return value
@@ -159,7 +167,7 @@ class KernelGenerator {
         third = Math.pow(i, 2.0) / second;
         kernel[x] = (double) (first * (1 - third) * Math.exp(-third));
         fkernel[x] = (float) kernel[x];
-       // println("LoG kernel[" + x + "] = " + fkernel[x]);
+        println("LoG kernel[" + x + "] = " + fkernel[x]);
     }
     return fkernel;
   }

@@ -21,9 +21,8 @@ class dataPlot {
   float scale_x;
   float pan_y;
   float scale_y;
-  
-                          // phase correction drawing pointers
-  float drawPtrX = 0;
+
+  float drawPtrX = 0;     // phase correction drawing pointers
   float drawPtrXLessK = 0;
   float drawPtrXLessKandD1 = 0;
   
@@ -35,26 +34,38 @@ class dataPlot {
   int subpixelMarkerLen;      // length of vertical lines which indicate subpixel peaks and shadow center location
   double negPeakVal;          // value of greatest negative peak in 1st difference data, y axis (height centric)
   double posPeakVal;          // value of greatest positivefloat( peak in 1st difference data, y axis (height centric)
-  double a1, b1, c1;          // sub pixel quadratic interpolation input variables for negative difference peak
-  double a2, b2, c2;          // sub pixel quadratic interpolation input variables for positive difference peak
+  double a1, b1, c1;          // sub pixel quadratic interpolation input variables for negative difference peak and left/right neighbors
+  double a2, b2, c2;          // sub pixel quadratic interpolation input variables for positive difference peak and left/right neighbors
   double negPeakSubPixelLoc;  // quadratic interpolated negative peak subpixel x position; 
   double posPeakSubPixelLoc;  // quadratic interpolated positive peak subpixel x position
   double preciseWidth;        // filament width output in pixels
+  double preciseWidthLowPass; // width filtered with simple running average filter
   double preciseWidthMM;      // filament width output in mm
   double precisePosition;     // center position output in pixels
+  double precisePositionLowPass; // position filtered with simple running average filter
   double preciseMMPos;        // canter position output in mm
   double widthInPixels;       // integer difference between the two peaks without subpixel precision
   double shiftSumX;           // temporary variable for summing x shift values
   double calibrationCoefficient = 0.9822050932057512;
   
-  float x0, x1, x2, x3;       // temp variables which hold derivative values, used instead of another array
+  float d0, d1, d2, d3;       // temp variables which hold derivative values, used instead of another array
   float  XCoord;              // temporary variable for holding a screen X coordinate
   float  YCoord;              // temporary variable for holding a screen Y coordinate
   // =============================================================================================
   //Arrays
   
   float[] output = new float[0];       // array for output signal
-  
+  int in;
+  float outMinus1;
+  float out0;
+  //float out1;
+  //float out2;
+  //float out3;
+  //float out4;
+  //float out5;
+  //float out6;
+  //float out7;
+  //float out8;
   // =============================================================================================
   Legend Legend1;             // One Legend object, lists the colors and what they represent
   Grid Grid1;                 // One Grid object, draws a grid
@@ -133,13 +144,13 @@ class dataPlot {
 
 
     // The minimum number of input data samples is two times the kernel length, (we ignore 
-    // the fist and last kernel lengths of data) + 1, which would result in the minumum of only one sample 
+    // the fist and last kernel lengths of data), + 1, which would result in the minumum of only one sample 
     // processed. 
     
     wDataStartPos = 0;
     wDataStopPos = dpDataLen;
-    //wDataStartIndex = constrain(wDataStartIndex, 0, wDataLen);
-    //wDataStopIndex = constrain(wDataStopIndex, 0, wDataLen);
+    //wDataStartPos = constrain(wDataStartPos, 0, dpDataLen);
+    //wDataStopPos = constrain(wDataStopPos, 0, dpDataLen);
     
     // draw grid, legend, and kernel
     //Grid1.drawGrid(SCREEN_WIDTH, SCREEN_HEIGHT, 32/scale_x);
@@ -147,7 +158,7 @@ class dataPlot {
     //drawGrid2(pan_x, (wDataLen * scale_x) + pan_x, 0, height + pan_y, 64 * scale_x, 256 * scale_y);
     
     Legend1.drawLegend();
-    drawKernel(0, scale_x, 0, kernelMultiplier);
+    drawKernel(0, scale_x, 0, kernelMultiplier, KG1.sigma);
     
     if (signalSource == 3){             // Plot using Serial Data
       processSerialData();  // from 0 to SENSOR_PIXELS-1              
@@ -173,7 +184,7 @@ class dataPlot {
      }
   }
   
-  void drawKernel(float pan_x, float scale_x, float pan_y, float scale_y){
+  void drawKernel(float pan_x, float scale_x, float pan_y, float scale_y, float sigma){
     
     // plot kernel data point
     stroke(COLOR_KERNEL_DATA);
@@ -186,6 +197,8 @@ class dataPlot {
       point(drawPtrXLessK+HALF_SCREEN_WIDTH, 
       SCREEN_HEIGHT-kernelDrawYOffset - (kernel[outerPtrX] * scale_y) + pan_y);
      }
+     fill(255);
+     text("Kernel Sigma: " + sigma, HALF_SCREEN_WIDTH-60, (SCREEN_HEIGHT-20));
   }
 
   void processSerialData(){
@@ -202,11 +215,6 @@ class dataPlot {
     
       outerCount++; // lets us index (x axis) on the screen offset from outerPtrX
       
-      // receive serial port data into the input[] array:
-      // Read a pair of bytes from the byte array, convert them into an integer, 
-      // shift right 2 places(divide by 4), and copy result into data_Array[]
-      input[outerPtrX] = (byteArray[outerPtrX<<1]<< 8 | (byteArray[(outerPtrX<<1) + 1] & 0xFF))>>2;
-      
       // Below we prepare 3 indexes to phase shift the x axis to the left as drawn, which corrects 
       // for convolution shift, and then multiply by the x scaling variable, and add the pan_x variable.
       
@@ -220,63 +228,96 @@ class dataPlot {
       // shift left by half a data point increment to properly position the 1st difference points in-beween the original data points.
       drawPtrXLessKandD1 = ((outerCount - HALF_KERNEL_LENGTH -0.5) * scale_x) + pan_x;
  
+      // parse one pixel data value from the serial port data byte array:
+      // Read a pair of bytes from the byte array, convert them into an integer, 
+      // shift right 2 places(divide by 4), and copy result to 'in'
+      in = (byteArray[outerPtrX<<1]<< 8 | (byteArray[(outerPtrX<<1) + 1] & 0xFF))>>2;
+      
       // plot original data point
       stroke(COLOR_ORIGINAL_DATA);
       
-      point(drawPtrX, HALF_SCREEN_HEIGHT - (input[outerPtrX] * scale_y) + pan_y);
+      point(drawPtrX, HALF_SCREEN_HEIGHT - (in * scale_y) + pan_y);
       // draw section of greyscale bar showing the 'color' of original data values
-      greyscaleBarMapped(drawPtrX, scale_x, 0, input[outerPtrX]);
-    
+      greyscaleBarMapped(drawPtrX, scale_x, 0, in);
+      
+      //for ( i = 0; i < sampleCount; i++ ){
+      //  y[i] = 0;                       // set to zero before sum
+      //  for ( j = 0; j < kernelCount; j++ ){
+      //    y[i] += x[i - j] * h[j];    // convolve: multiply and accumulate
+      //  }
+      //}
+      
       // convolution inner loop
-      for (int innerPtrX = 0; innerPtrX < KERNEL_LENGTH; innerPtrX++) { // increment the inner loop pointer
-        // convolution (that magic line which can do so many different things depending on the kernel)
-        output[outerPtrX+innerPtrX] = output[outerPtrX+innerPtrX] + input[outerPtrX] * kernel[innerPtrX]; 
+      for (innerPtrX = 0; innerPtrX < KERNEL_LENGTH; innerPtrX++) { // increment the inner loop pointer
+        output[outerPtrX+innerPtrX] += in * kernel[innerPtrX]; // convolve: multiply and accumulate
       }
-  
+      
+      // for educational purposes, the code below does the same thing as the loop above for a 9 element kernel.
+      // one advantage seems to be, there is no need to zero old values; they simply get written over.
+      // One serious disadvantage is, the kernel size is fixed.
+      //outMinus1 = out0;
+      //out0 = out1 + in * kernel[0];
+      //out1 = out2 + in * kernel[1];
+      //out2 = out3 + in * kernel[2];
+      //out3 = out4 + in * kernel[3];
+      //out4 = out5 + in * kernel[4];
+      //out5 = out6 + in * kernel[5];
+      //out6 = out7 + in * kernel[6];
+      //out7 = out8 + in * kernel[7];
+      //out8 = in * kernel[8];
+      
+     outMinus1 = out0;           // previous y value
+     out0 = output[outerPtrX];   // current y value
+     
       // plot the output data
       stroke(COLOR_OUTPUT_DATA);
-      point(drawPtrXLessK, HALF_SCREEN_HEIGHT - (output[outerPtrX] * scale_y) + pan_y);
+      point(drawPtrXLessK, HALF_SCREEN_HEIGHT - (out0 * scale_y) + pan_y);
       //println("output[" + outerPtrX + "]" +output[outerPtrX]);
      
       // draw section of greyscale bar showing the 'color' of output data values
-      greyscaleBarMapped(drawPtrXLessK, scale_x, 11, output[outerPtrX]);
+      greyscaleBarMapped(drawPtrXLessK, scale_x, 11, out0);
       
-      // find 1st difference of the convolved data, the difference between adjacent points in the input[] array.
+      // find 1st difference of the convolved data, the difference between adjacent points in the smoothed data.
       // We skip the first KERNEL_LENGTH of convolution output data, which is garbage from smoothing convolution 
-      // kernel not being fully immersed in the input signal data.
-     if (outerPtrX > KERNEL_LENGTH_MINUS1) {  // minus one because index starts at zero
-        x3=x2; // y value @ x index -3
-        x2=x1; // y value @ x index -2
-        x1=x0; // y value @ x index -1
-        x0 = output[outerPtrX] - output[outerPtrX-1]; // the difference between adjacent points, called the 1st difference
+      // kernel not being fully immersed in the input data.
+     if (outerCount > KERNEL_LENGTH_MINUS1) {  // skip the first kernel's width of values which are garbage
+        d3=d2; // y value @ x index -3
+        d2=d1; // y value @ x index -2
+        d1=d0; // y value @ x index -1
+        d0 = out0 - outMinus1; // the difference between adjacent points, in dsp preferably called the 1st difference
         
         stroke(COLOR_FIRST_DIFFERENCE_OF_OUTPUT);
-        point(drawPtrXLessKandD1, HALF_SCREEN_HEIGHT - (x0 * scale_y) + pan_y);
+        point(drawPtrXLessKandD1, HALF_SCREEN_HEIGHT - (d0 * scale_y) + pan_y);
         // draw section of greyscale bar showing the 'color' of output2 data values
         //void greyscaleBarMapped(float x, float scale_x, float y, float value) {
-        greyscaleBarMappedAbs(drawPtrXLessKandD1, scale_x, 22, x0);
+        greyscaleBarMappedAbs(drawPtrXLessKandD1, scale_x, 22, d0);
         // find the the tallest positive and negative peaks in 1st difference of the convolution output data, 
         // which is the point of steepest positive and negative slope in the smoothed original data
-        if (x2 > posPeakVal) {
+        if (d2 > posPeakVal) {
           posPeakLoc = outerPtrX-2; // x index -2
-          c2=x1; // y value @ x index -1
-          b2=x2; // y value @ x index -2 (positive 1st difference peak location)
-          a2=x3; // y value @ x index -3
-          posPeakVal = x2;
-        }else if (x2 < negPeakVal) {
+          c2=d1; // y value @ x index -1
+          b2=d2; // y value @ x index -2 (positive 1st difference peak location)
+          a2=d3; // y value @ x index -3
+          posPeakVal = d2;
+        }else if (d2 < negPeakVal) {
           negPeakLoc = outerPtrX-2; // x index -2
-          c1=x1; // y value @ x index -1
-          b1=x2; // y value @ x index -2 (negative 1st difference peak location)
-          a1=x3; // y value @ x index -3
-          negPeakVal = x2;
+          c1=d1; // y value @ x index -1
+          b1=d2; // y value @ x index -2 (negative 1st difference peak location)
+          a1=d3; // y value @ x index -3
+          negPeakVal = d2;
         }
       }
     }
   }
-  
+
   void processData(){
     
     int outerCount = 0;
+    
+    negPeakLoc = wDataStopPos; // one past the last pixel, to prevent false positives?
+    posPeakLoc = wDataStopPos; // one past the last pixel, to prevent false positives?
+    negPeakVal = 0;
+    posPeakVal = 0;
 
     // increment the outer loop pointer from 0 to SENSOR_PIXELS-1
     for (outerPtrX = wDataStartPos; outerPtrX < wDataStopPos; outerPtrX++) {
@@ -296,55 +337,81 @@ class dataPlot {
       // shift left by half a data point increment to properly position the 1st difference points in-beween the original data points.
       drawPtrXLessKandD1 = ((outerCount - HALF_KERNEL_LENGTH -0.5) * scale_x) + pan_x;
  
+      // copy one data value from the signal generator output array:
+      in = sigGenOutput[outerPtrX];
+      
       // plot original data point
       stroke(COLOR_ORIGINAL_DATA);
       
-      point(drawPtrX, HALF_SCREEN_HEIGHT - (input[outerPtrX] * scale_y) + pan_y);
+      point(drawPtrX, HALF_SCREEN_HEIGHT - (in * scale_y) + pan_y);
       // draw section of greyscale bar showing the 'color' of original data values
-      greyscaleBarMapped(drawPtrX, scale_x, 0, input[outerPtrX]);
-    
+      greyscaleBarMapped(drawPtrX, scale_x, 0, in);
+      
+      //for ( i = 0; i < sampleCount; i++ ){
+      //  y[i] = 0;                       // set to zero before sum
+      //  for ( j = 0; j < kernelCount; j++ ){
+      //    y[i] += x[i - j] * h[j];    // convolve: multiply and accumulate
+      //  }
+      //}
+      
       // convolution inner loop
-      for (int innerPtrX = 0; innerPtrX < KERNEL_LENGTH; innerPtrX++) { // increment the inner loop pointer
-        // convolution (that magic line which can do so many different things depending on the kernel)
-        output[outerPtrX+innerPtrX] = output[outerPtrX+innerPtrX] + input[outerPtrX] * kernel[innerPtrX]; 
+      for (innerPtrX = 0; innerPtrX < KERNEL_LENGTH; innerPtrX++) { // increment the inner loop pointer
+        output[outerPtrX+innerPtrX] += in * kernel[innerPtrX]; // convolve: multiply and accumulate
       }
-  
+      
+      // for educational purposes, the code below does the same thing as the loop above for a 9 element kernel.
+      // one advantage seems to be, there is no need to zero old values; they simply get written over.
+      // One serious disadvantage is, the kernel size is fixed.
+      //outMinus1 = out0;
+      //out0 = out1 + in * kernel[0];
+      //out1 = out2 + in * kernel[1];
+      //out2 = out3 + in * kernel[2];
+      //out3 = out4 + in * kernel[3];
+      //out4 = out5 + in * kernel[4];
+      //out5 = out6 + in * kernel[5];
+      //out6 = out7 + in * kernel[6];
+      //out7 = out8 + in * kernel[7];
+      //out8 = in * kernel[8];
+      
+     outMinus1 = out0;           // previous y value
+     out0 = output[outerPtrX];   // current y value
+     
       // plot the output data
       stroke(COLOR_OUTPUT_DATA);
-      point(drawPtrXLessK, HALF_SCREEN_HEIGHT - (output[outerPtrX] * scale_y) + pan_y);
+      point(drawPtrXLessK, HALF_SCREEN_HEIGHT - (out0 * scale_y) + pan_y);
       //println("output[" + outerPtrX + "]" +output[outerPtrX]);
      
       // draw section of greyscale bar showing the 'color' of output data values
-      greyscaleBarMapped(drawPtrXLessK, scale_x, 11, output[outerPtrX]);
+      greyscaleBarMapped(drawPtrXLessK, scale_x, 11, out0);
       
-      // find 1st difference of the convolved data, the difference between adjacent points in the input[] array.
+      // find 1st difference of the convolved data, the difference between adjacent points in the smoothed data.
       // We skip the first KERNEL_LENGTH of convolution output data, which is garbage from smoothing convolution 
-      // kernel not being fully immersed in the input signal data.
-     if (outerPtrX > KERNEL_LENGTH_MINUS1) {  // minus one because index starts at zero
-        x3=x2; // y value @ x index -3
-        x2=x1; // y value @ x index -2
-        x1=x0; // y value @ x index -1
-        x0 = output[outerPtrX] - output[outerPtrX-1]; // the difference between adjacent points, called the 1st difference
+      // kernel not being fully immersed in the input data.
+     if (outerCount > KERNEL_LENGTH_MINUS1) {  // skip the first kernel's width of values which are garbage
+        d3=d2; // y value @ x index -3
+        d2=d1; // y value @ x index -2
+        d1=d0; // y value @ x index -1
+        d0 = out0 - outMinus1; // the difference between adjacent points, in dsp preferably called the 1st difference
         
         stroke(COLOR_FIRST_DIFFERENCE_OF_OUTPUT);
-        point(drawPtrXLessKandD1, HALF_SCREEN_HEIGHT - (x0 * scale_y) + pan_y);
+        point(drawPtrXLessKandD1, HALF_SCREEN_HEIGHT - (d0 * scale_y) + pan_y);
         // draw section of greyscale bar showing the 'color' of output2 data values
         //void greyscaleBarMapped(float x, float scale_x, float y, float value) {
-        greyscaleBarMappedAbs(drawPtrXLessKandD1, scale_x, 22, x0);
+        greyscaleBarMappedAbs(drawPtrXLessKandD1, scale_x, 22, d0);
         // find the the tallest positive and negative peaks in 1st difference of the convolution output data, 
         // which is the point of steepest positive and negative slope in the smoothed original data
-        if (x2 > posPeakVal) {
+        if (d2 > posPeakVal) {
           posPeakLoc = outerPtrX-2; // x index -2
-          c2=x1; // y value @ x index -1
-          b2=x2; // y value @ x index -2 (positive 1st difference peak location)
-          a2=x3; // y value @ x index -3
-          posPeakVal = x2;
-        }else if (x2 < negPeakVal) {
+          c2=d1; // y value @ x index -1
+          b2=d2; // y value @ x index -2 (positive 1st difference peak location)
+          a2=d3; // y value @ x index -3
+          posPeakVal = d2;
+        }else if (d2 < negPeakVal) {
           negPeakLoc = outerPtrX-2; // x index -2
-          c1=x1; // y value @ x index -1
-          b1=x2; // y value @ x index -2 (negative 1st difference peak location)
-          a1=x3; // y value @ x index -3
-          negPeakVal = x2;
+          c1=d1; // y value @ x index -1
+          b1=d2; // y value @ x index -2 (negative 1st difference peak location)
+          a1=d3; // y value @ x index -3
+          negPeakVal = d2;
         }
       }
     }
@@ -429,17 +496,19 @@ class dataPlot {
       // posPeakSubPixelLoc=((a2-c2) / (a2+c2-(b2*2)))/2;
 
       preciseWidth = widthInPixels + (posPeakSubPixelLoc - negPeakSubPixelLoc);
-      preciseWidthMM = preciseWidth * sensorPixelSpacing * calibrationCoefficient;
-     
+      preciseWidthLowPass = (preciseWidthLowPass * 0.9) + (preciseWidth * 0.1);
+      preciseWidthMM = preciseWidthLowPass * sensorPixelSpacing * calibrationCoefficient;
+
       //println(calibrationCoefficient);
       
       // solve for the center position
       precisePosition = (((negPeakLoc + negPeakSubPixelLoc) + (posPeakLoc + posPeakSubPixelLoc)) / 2);
+      precisePositionLowPass = (precisePositionLowPass * 0.9) + (precisePosition * 0.1);
       
-      preciseMMPos = precisePosition * sensorPixelSpacing;
+      preciseMMPos = precisePositionLowPass * sensorPixelSpacing;
 
        // sum of a few offsets, so we don't need to recalculate
-      shiftSumX =  0.5 + HALF_KERNEL_LENGTH - 1; 
+      shiftSumX =  0.5 + HALF_KERNEL_LENGTH + wDataStartPos - 1; 
 
       // Mark negPeakSubPixelLoc with red line
       noFill();
@@ -455,7 +524,7 @@ class dataPlot {
 
       // Mark subpixel center with white line
       stroke(255);
-      XCoord = (float)((precisePosition - shiftSumX) * scale_x) + pan_x;
+      XCoord = (float)((precisePositionLowPass - shiftSumX) * scale_x) + pan_x;
       line(XCoord, HALF_SCREEN_HEIGHT + subpixelMarkerLen, XCoord, HALF_SCREEN_HEIGHT - subpixelMarkerLen); 
 
       // Mark negPeakLoc 3 pixel cluster with one red circle each
@@ -478,8 +547,8 @@ class dataPlot {
       //text("posPeakLoc: " + posPeakLoc, 125, YCoord);
       //text("negPeakSubPixelLoc: " + String.format("%.3f", negPeakSubPixelLoc), 250, YCoord);
       //text("posPeakSubPixelLoc: " + String.format("%.3f", posPeakSubPixelLoc), 325, YCoord);
-      text("Width in Pixels: " + String.format("%.3f", preciseWidth), XCoord - 450, YCoord);
-      text("Position in Pixels = " + String.format("%.3f", precisePosition), XCoord - 250, YCoord);
+      text("Width in Pixels: " + String.format("%.3f", preciseWidthLowPass), XCoord - 450, YCoord);
+      text("Position in Pixels = " + String.format("%.3f", precisePositionLowPass), XCoord - 250, YCoord);
       text("Width mm: " + String.format("%.5f", preciseWidthMM), XCoord + 75, YCoord);
       text("Position mm: " + String.format("%.5f", preciseMMPos), XCoord + 250, YCoord);
     }

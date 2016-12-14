@@ -15,30 +15,30 @@ class SignalGenerator {
   
     switch (signalsource) {
       case 0: // hard-coded sensor data containing a shadow edge profile
-        input = setHardCodedSensorData(); 
-        SENSOR_PIXELS = input.length;
+        sigGenOutput = setHardCodedSensorData(); 
+        SENSOR_PIXELS = sigGenOutput.length;
         break;
       case 1:
         // a single adjustable step impulse, (square pos or neg pulse) 
         // useful for verifying the kernel is doing what it should.
-        input = setInputSingleImpulse(1024, 1023, 20, (KERNEL_LENGTH/2)+1, false);
-        SENSOR_PIXELS = input.length;
+        sigGenOutput = setInputSingleImpulse(1024, 1023, 20, (KERNEL_LENGTH/2)+1, false);
+        SENSOR_PIXELS = sigGenOutput.length;
         break;
       case 2: // an adjustable square wave
-        input = setInputSquareWave(1024, 40, 1023);
-        SENSOR_PIXELS = input.length;
+        sigGenOutput = setInputSquareWave(1024, 40, 1023);
+        SENSOR_PIXELS = sigGenOutput.length;
         break;
       case 3: // Serial Data from Teensy 3.6 driving TSL1402R or TSL1410R linear photodiode array
         SENSOR_PIXELS = 1280; // Number of pixel values, 256 for TSL1402R sensor, and 1280 for TSL1410R sensor
         N_BYTES_PER_SENSOR_FRAME = SENSOR_PIXELS * 2; // we use 2 bytes to represent each sensor pixel
         N_BYTES_PER_SENSOR_FRAME_PLUS1 = N_BYTES_PER_SENSOR_FRAME + 1; // the data bytes + PREFIX byte
         byteArray = new byte[N_BYTES_PER_SENSOR_FRAME_PLUS1]; // array of raw serial data bytes
-        input = new int[SENSOR_PIXELS];
+        sigGenOutput = new int[SENSOR_PIXELS];
         break;
       default:
         // hard-coded sensor data containing a shadow edge profile
-        input = SG1.setHardCodedSensorData(); 
-        SENSOR_PIXELS = input.length;
+        sigGenOutput = SG1.setHardCodedSensorData(); 
+        SENSOR_PIXELS = sigGenOutput.length;
     }
     
       println("SENSOR_PIXELS = " + SENSOR_PIXELS);
@@ -65,7 +65,7 @@ class SignalGenerator {
       // adjust smoothness with noise input
       noiseInput = noiseInput + noiseIncrement;  
       // perlin noise
-      input[c] = int(map(noise(noiseInput), 0, 1, 0, HIGHEST_ADC_VALUE * scale_y));  
+      sigGenOutput[c] = int(map(noise(noiseInput), 0, 1, 0, HIGHEST_ADC_VALUE * scale_y));  
       //println (noise(noiseInput));
      }
   }

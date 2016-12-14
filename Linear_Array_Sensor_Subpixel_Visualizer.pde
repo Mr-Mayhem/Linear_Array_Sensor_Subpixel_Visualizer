@@ -39,10 +39,10 @@ translated into Processing (java) by Douglas Mayhew
  https://www.thingiverse.com/thing:668377
 
  This sketch is able to run the subpixel position code against various data sources. 
- The sketch can synthesize some input data like square impulses, to verify that the output is 
- doing what it should. It also works with live sensor data from a TSL1402R or TSL1410R linear photodiode array, 
- arriving via USB serial port. To do this,
- see my 2 projects:
+ The sketch can synthesize test data like square impulses, to verify that the output is 
+ doing what it should. It is mainly concerned with processing and displaying live sensor data 
+ from a TSL1402R or TSL1410R linear photodiode array, arriving via USB serial port. To feed the data to
+ this sketch from these sensors, see my 2 related projects:
  
  Read-TSL1402R-Optical-Sensor-using-Teensy-3.x
  https://github.com/Mr-Mayhem/Read-TSL1402R-Optical-Sensor-using-Teensy-3.x
@@ -104,13 +104,13 @@ final float sensorWidthAllPixels = 16.256;         // millimeters
 // Arrays:
 
 byte[] byteArray = new byte[0];      // array of raw serial data bytes
-int[] input = new int[0];            // array for input signal
+int[] sigGenOutput = new int[0];     // array for signal generator output
 float[] kernel = new float[0];       // array for impulse response, or kernel
 
 // Global Variables:
 int signalSource;                    // selects a signal data source
 int kernelSource;                    // selects a kernel
-int SENSOR_PIXELS;                   // number of discrete values in the input array, 1 per linear array sensor pixel
+int SENSOR_PIXELS;                   // number of discrete data values, 1 per sensor pixel
 int N_BYTES_PER_SENSOR_FRAME;        // we use 2 bytes to represent each sensor pixel
 int N_BYTES_PER_SENSOR_FRAME_PLUS1;  // the data bytes + the PREFIX byte
 int SCREEN_HEIGHT;                   // scales screen height relative to highest data value
@@ -133,7 +133,7 @@ int HALF_SCREEN_WIDTH;               // half the screen width, reduces division 
 // Set Objects
 Serial myPort;       // One Serial object, receives serial port data from Teensy 3.6 running sensor driver sketch
 dataPlot DP1;        // One dataPlot object, handles plotting data with mouse sliding and zooming ability
-SignalGenerator SG1; // Creates input signals for the system to work on
+SignalGenerator SG1; // Creates artificial signals for the system to process and display for testing & experientation
 KernelGenerator KG1; // Creates a kernel and saves it's data into an array
 // ==============================================================================================
 
@@ -173,7 +173,9 @@ void setup() {
   background(0);
   strokeWeight(1);
   // Create the dataPlot object, which handles plotting data with mouse sliding and zooming ability
-  DP1 = new dataPlot(this, 0, 0, SCREEN_WIDTH, HALF_SCREEN_HEIGHT, SENSOR_PIXELS);
+  // dataStop set not past SENSOR_PIXELS, rather than SENSOR_PIXELS + KERNEL_LENGTH, to prevent convolution garbage at end 
+  // from partial kernel immersion
+  DP1 = new dataPlot(this, 0, 0, SCREEN_WIDTH, HALF_SCREEN_HEIGHT, SENSOR_PIXELS); 
   
   // set framerate() a little above where increases don't speed it up much.
   // Also note, for highest speed, comment out drawing plots you don't care about.
@@ -217,7 +219,7 @@ void draw() {
   fill(255);
   
   // Counts 1 to 60 and repeats
-  text(chartRedraws, 10, 50); //<>//
+  text(chartRedraws, 10, 50); //<>// //<>//
 
   // Plot the Data
    DP1.display();
@@ -233,4 +235,4 @@ void mouseDragged() {
 
 void mouseWheel(MouseEvent event) {
   DP1.mouseWheel(-event.getCount()); // note the minus sign (-) inverts the mouse wheel output direction
-} //<>//
+} //<>// //<>//
