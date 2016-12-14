@@ -118,7 +118,7 @@ class dataPlot {
     }
   }
 
-  void keyPressed() {
+  void keyPressed() { // we simply pass through the mouse events to the pan zoom object
     PZX1.keyPressed();
   }
   
