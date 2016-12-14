@@ -292,7 +292,7 @@ class dataPlot {
         //void greyscaleBarMapped(float x, float scale_x, float y, float value) {
         greyscaleBarMappedAbs(drawPtrXLessKandD1, scale_x, 22, d0);
         // find the the tallest positive and negative peaks in 1st difference of the convolution output data, 
-        // which is the point of steepest positive and negative slope in the smoothed original data
+        // which is the point of steepest positive and negative slope
         if (d2 > posPeakVal) {
           posPeakLoc = outerPtrX-2; // x index -2
           c2=d1; // y value @ x index -1
@@ -392,7 +392,7 @@ class dataPlot {
         //void greyscaleBarMapped(float x, float scale_x, float y, float value) {
         greyscaleBarMappedAbs(drawPtrXLessKandD1, scale_x, 22, d0);
         // find the the tallest positive and negative peaks in 1st difference of the convolution output data, 
-        // which is the point of steepest positive and negative slope in the smoothed original data
+        // which is the point of steepest positive and negative slope
         if (d2 > posPeakVal) {
           posPeakLoc = outerPtrX-2; // x index -2
           c2=d1; // y value @ x index -1
