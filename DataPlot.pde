@@ -163,7 +163,7 @@ class dataPlot {
       processSerialData();  // from 0 to SENSOR_PIXELS-1              
     } else
     {                                 // Plot using Simulated Data
-      processData();        // from 0 to SENSOR_PIXELS-1
+      processSignalGeneratorData();        // from 0 to SENSOR_PIXELS-1
     }
     
     calculateSensorShadowPosition(); // Subpixel calculation  
@@ -309,7 +309,7 @@ class dataPlot {
     }
   }
 
-  void processData(){
+  void processSignalGeneratorData(){
     
     int outerCount = 0;
     
