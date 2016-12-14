@@ -347,13 +347,6 @@ class dataPlot {
       // draw section of greyscale bar showing the 'color' of original data values
       greyscaleBarMapped(drawPtrX, scale_x, 0, in);
       
-      //for ( i = 0; i < sampleCount; i++ ){
-      //  y[i] = 0;                       // set to zero before sum
-      //  for ( j = 0; j < kernelCount; j++ ){
-      //    y[i] += x[i - j] * h[j];    // convolve: multiply and accumulate
-      //  }
-      //}
-      
       // convolution inner loop
       for (innerPtrX = 0; innerPtrX < KERNEL_LENGTH; innerPtrX++) { // increment the inner loop pointer
         output[outerPtrX+innerPtrX] += in * kernel[innerPtrX]; // convolve: multiply and accumulate
