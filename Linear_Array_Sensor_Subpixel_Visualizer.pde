@@ -118,7 +118,6 @@ int HALF_SCREEN_HEIGHT;              // half the screen height, reduces division
 int KERNEL_LENGTH;                   // number of discrete values in the kernel array, set in setup() 
 int KERNEL_LENGTH_MINUS1;            // kernel length minus 1, used to reduce math in loops
 int HALF_KERNEL_LENGTH;              // Half the kernel length, used to correct convoltion phase shift
-int OUTPUT_DATA_LENGTH;              // number of discrete values in the output array, set in setup()
 int bytesRead;                       // number of bytes actually read out from the serial buffer
 int availableBytesDraw;              // used to show the number of bytes present in the serial buffer
 
@@ -149,23 +148,23 @@ void setup() {
   HALF_SCREEN_HEIGHT = SCREEN_HEIGHT / 2;
   
   // ============================================================================================
-  // Choose a kernel source:
-  kernelSource = 0;
+  kernelSource = 0; // <<< <<< Choose a kernel source:
   // Create a kernelGenerator object, which creates a kernel and saves it's data into an array
-  KG1 = new KernelGenerator(kernelSource);
-  
+  KG1 = new KernelGenerator();
+  KG1.setKernelSource(kernelSource);
   // ============================================================================================
-  // Choose a signal source:
+  
   // You are encouraged to try different signal sources, to see how the subpixel code behaves with 
   // nearly perfect waveforms
-  signalSource = 3;
+  signalSource = 2;  // <<< <<< Choose a signal source:
   // =============================================================================================
   
   // Create a dataPlot object, which plots data and provides mouse sliding and zooming ability
-  SG1 = new SignalGenerator(signalSource);
+  SG1 = new SignalGenerator();
+  sigGenOutput = SG1.signalGeneratorOutput(signalSource, 1024, 2000);
   
   // the data length times the number of pixels per data point
-  SCREEN_WIDTH = 1024; //OUTPUT_DATA_LENGTH * SCALE_X;
+  SCREEN_WIDTH = 1024;
   HALF_SCREEN_WIDTH = SCREEN_WIDTH / 2;
   
   // set the screen dimensions
@@ -180,8 +179,6 @@ void setup() {
   // set framerate() a little above where increases don't speed it up much.
   // Also note, for highest speed, comment out drawing plots you don't care about.
   frameRate(200); 
-  
-  SG1.resetData();
   
   println("SCREEN_WIDTH: " + SCREEN_WIDTH);
   println("SCREEN_HEIGHT: " + SCREEN_HEIGHT);
@@ -219,7 +216,7 @@ void draw() {
   fill(255);
   
   // Counts 1 to 60 and repeats
-  text(chartRedraws, 10, 50); //<>// //<>//
+  text(chartRedraws, 10, 50); //<>//
 
   // Plot the Data
    DP1.display();
@@ -235,4 +232,4 @@ void mouseDragged() {
 
 void mouseWheel(MouseEvent event) {
   DP1.mouseWheel(-event.getCount()); // note the minus sign (-) inverts the mouse wheel output direction
-} //<>// //<>//
+} //<>//

@@ -11,18 +11,21 @@ class KernelGenerator {
   // float [] gaussianLaplacian = {-7.474675E-4, -0.0123763615, -0.04307856, 0.09653235, 0.31830987, 0.09653235, -0.04307856, -0.0123763615, -7.474675E-4};
   // float [] laplacian = {1, -2, 1}; 
 
-  KernelGenerator (int kernelsource) {
+  KernelGenerator () {
   
   // input to kernel creation function, controls spreading of gaussian kernel
   // this is an important adjustment for subpixel accuracy
   // too low and the noise creeps in and the peaks are not locally symmectrical (bad)
   // too high, and the peaks get too far smoothed out and accuracy suffers as a result
-  gaussianKernelSigma = 1.2; 
+  gaussianKernelSigma = 1.4; 
   
   // input to kernel creation function, controls spreading of loG kernel
   loGKernelSigma = 1.0;
+  }
+  
+  float [] setKernelSource(int kernelSource) {
     
-    switch (kernelsource) {
+    switch (kernelSource) {
     case 0:
       // a dynamically created gaussian bell curve kernel
       sigma = gaussianKernelSigma;
@@ -31,7 +34,7 @@ class KernelGenerator {
     case 1:
       // a hard-coded gaussian kernel
       sigma = 1.4;
-      kernel = setArray(gaussian);
+      kernel = setKernelArray(gaussian);
       break;
     case 2:
       // a loGKernelSigma kernel
@@ -41,37 +44,16 @@ class KernelGenerator {
     default:
       // a hard-coded gaussian kernel, hard to mess up.
       sigma = 1.4;
-      kernel = setArray(gaussian);
+      kernel = setKernelArray(gaussian);
+    }
+    KERNEL_LENGTH = kernel.length;                 // always odd
+    KERNEL_LENGTH_MINUS1 = KERNEL_LENGTH - 1;      // always even
+    HALF_KERNEL_LENGTH = KERNEL_LENGTH_MINUS1 / 2; // always even divided by 2 = even halves
+    println("KERNEL_LENGTH: " + KERNEL_LENGTH);
+    return kernel;
   }
   
-  KERNEL_LENGTH = kernel.length; 
-  KERNEL_LENGTH_MINUS1 = KERNEL_LENGTH - 1;
-  println("KERNEL_LENGTH: " + KERNEL_LENGTH);
-  HALF_KERNEL_LENGTH = KERNEL_LENGTH / 2;
-  
-  // some other kernels we experimented with, but don't need here because our preferred subpixel edge detection method is decided.
-  
-  // A hard-coded Sorbel kernel
-  // kernel = setArray(sorbel);
-  
-  // Laplacians are used to find edges using the 2nd derivative method, by looking for zero-crossings after running it.
-  // but our preferred method of fitting a parabola to the peaks of the 1st derivative (1st difference in dsp jargon) 
-  // is more accurate, it being a sub-pixel method.
-  
-  // A hard-coded Laplacian kernel
-  // kernel = setArray(laplacian);
-  
-  // A hard-coded Gaussian-Laplacian kernel (combination of Gaussian and Laplacian, the 'Mexican Hat Filter')
-  // This kernel saves a convolution step by combining two kernels which would otherwise be run seperately, into one.
-  // kernel = setArray(gaussianLaplacian);
-
-  // A dynamically created Gaussian Laplacian kernel (combination of Gaussian and Laplacian, the 'Mexican Hat Filter')
-  // This kernel saves a convolution step by combining two kernels which would otherwise be run seperately, into one.
-  // kernel = createLoGKernal1d(loGKernelSigma); 
-  
-  }
-  
-  float [] setArray(float [] inArray) {
+  float [] setKernelArray(float [] inArray) {
   
   float[] kernel = new float[inArray.length]; // set to an odd value for an even integer phase offset
   kernel = inArray;

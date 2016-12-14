@@ -8,6 +8,11 @@ class dataPlot {
   int dpHeight;
   int dpDataLen;
   
+  int in;                  // a single convolution input y value
+  float outMinus1;         // the previous convolution output y value
+  float out0;              // the current convolution output y value
+  
+  
   float kernelMultiplier; // multiplies the plotted y values of the kernel, for greater visibility since they are small
   int kernelDrawYOffset;  // height above bottom of screen to draw the kernel data points
 
@@ -55,17 +60,7 @@ class dataPlot {
   //Arrays
   
   float[] output = new float[0];       // array for output signal
-  int in;
-  float outMinus1;
-  float out0;
-  //float out1;
-  //float out2;
-  //float out3;
-  //float out4;
-  //float out5;
-  //float out6;
-  //float out7;
-  //float out8;
+  
   // =============================================================================================
   Legend Legend1;             // One Legend object, lists the colors and what they represent
   Grid Grid1;                 // One Grid object, draws a grid
@@ -95,12 +90,10 @@ class dataPlot {
     markSize = 3;
     
     // sets height deviation of vertical lines from center height, indicates subpixel peaks and shadow center location
-    subpixelMarkerLen = int(SCREEN_HEIGHT * 0.01);  
-                      
-    OUTPUT_DATA_LENGTH = SENSOR_PIXELS + KERNEL_LENGTH-1;
-    println("OUTPUT_DATA_LENGTH = " + OUTPUT_DATA_LENGTH);
+    subpixelMarkerLen = int(SCREEN_HEIGHT * 0.01);
+   
     // arrays for output signals, get resized after kernel size is known
-    output = new float[OUTPUT_DATA_LENGTH];
+    output = new float[KERNEL_LENGTH];
     
     // create the Legend object, which lists the colors and what they represent
     Legend1 = new Legend(); 
@@ -159,28 +152,20 @@ class dataPlot {
     Legend1.drawLegend();
     drawKernel(0, scale_x, 0, kernelMultiplier, KG1.sigma);
     
-    if (signalSource == 3){             // Plot using Serial Data
-      processSerialData();  // from 0 to SENSOR_PIXELS-1              
+    if (signalSource == 3){         // Plot using Serial Data
+      processSerialData();          // from 0 to SENSOR_PIXELS-1              
     } else
-    {                                 // Plot using Simulated Data
-      processSignalGeneratorData();        // from 0 to SENSOR_PIXELS-1
+    {                               // Plot using Simulated Data
+      processSignalGeneratorData(); // from 0 to SENSOR_PIXELS-1
     }
     
-    calculateSensorShadowPosition(); // Subpixel calculation  
+    calculateSensorShadowPosition(); // Subpixel calculations  
     
     text("Use mouse to drag, mouse wheel to zoom", HALF_SCREEN_WIDTH-150, 90);
     
     text("pan_x: " + String.format("%.3f", pan_x) + 
     "  scale_x: " + String.format("%.3f", scale_x),
     50, 50);
-    zeroOutputData();
-  }
-  
-  void zeroOutputData(){
-    
-    for (int c = 0; c < OUTPUT_DATA_LENGTH; c++){
-      output[c] = 0;
-     }
   }
   
   void drawKernel(float pan_x, float scale_x, float pan_y, float scale_y, float sigma){
@@ -214,8 +199,7 @@ class dataPlot {
     
       outerCount++; // lets us index (x axis) on the screen offset from outerPtrX
       
-      // Below we prepare 3 indexes to phase shift the x axis to the left as drawn, which corrects 
-      // for convolution shift, and then multiply by the x scaling variable, and add the pan_x variable.
+      // Below we prepare 3 x shift correction indexes to reduce the math work.
       
       // the outer pointer to the screen X axis (l)
       drawPtrX = (outerCount * scale_x) + pan_x;
@@ -240,26 +224,12 @@ class dataPlot {
       greyscaleBarMapped(drawPtrX, scale_x, 0, in);
       
       // convolution inner loop
-      for (innerPtrX = 0; innerPtrX < KERNEL_LENGTH; innerPtrX++) { // increment the inner loop pointer
-        output[outerPtrX+innerPtrX] += in * kernel[innerPtrX]; // convolve: multiply and accumulate
+      outMinus1 = out0; // y at previous x index
+      for (innerPtrX = 0; innerPtrX < KERNEL_LENGTH_MINUS1; innerPtrX++) { // increment the inner loop pointer
+        output[innerPtrX] = output[innerPtrX+1] + in * kernel[innerPtrX];  // convolve: multiply and accumulate
       }
-      
-      // for educational purposes, the code below does the same thing as the loop above for a 9 element kernel.
-      // one advantage seems to be, there is no need to zero old values; they simply get written over.
-      // One serious disadvantage is, the kernel size is fixed.
-      //outMinus1 = out0;
-      //out0 = out1 + in * kernel[0];
-      //out1 = out2 + in * kernel[1];
-      //out2 = out3 + in * kernel[2];
-      //out3 = out4 + in * kernel[3];
-      //out4 = out5 + in * kernel[4];
-      //out5 = out6 + in * kernel[5];
-      //out6 = out7 + in * kernel[6];
-      //out7 = out8 + in * kernel[7];
-      //out8 = in * kernel[8];
-      
-     outMinus1 = out0;           // previous y value
-     out0 = output[outerPtrX];   // current y value
+      output[KERNEL_LENGTH_MINUS1] = in * kernel[KERNEL_LENGTH_MINUS1];
+      out0 = output[0]; // y at current x index
      
       // plot the output data
       stroke(COLOR_OUTPUT_DATA);
@@ -316,8 +286,7 @@ class dataPlot {
     
       outerCount++; // lets us index (x axis) on the screen offset from outerPtrX
       
-      // Below we prepare 3 indexes to phase shift the x axis to the left as drawn, which corrects 
-      // for convolution shift, and then multiply by the x scaling variable, and add the pan_x variable.
+      // Below we prepare 3 x shift correction indexes to reduce the math work.
       
       // the outer pointer to the screen X axis (l)
       drawPtrX = (outerCount * scale_x) + pan_x;
@@ -340,26 +309,12 @@ class dataPlot {
       greyscaleBarMapped(drawPtrX, scale_x, 0, in);
       
       // convolution inner loop
-      for (innerPtrX = 0; innerPtrX < KERNEL_LENGTH; innerPtrX++) { // increment the inner loop pointer
-        output[outerPtrX+innerPtrX] += in * kernel[innerPtrX]; // convolve: multiply and accumulate
+      outMinus1 = out0; // y at previous x index
+      for (innerPtrX = 0; innerPtrX < KERNEL_LENGTH_MINUS1; innerPtrX++) { // increment the inner loop pointer
+        output[innerPtrX] = output[innerPtrX+1] + in * kernel[innerPtrX];  // convolve: multiply and accumulate
       }
-      
-      // for educational purposes, the code below does the same thing as the loop above for a 9 element kernel.
-      // one advantage seems to be, there is no need to zero old values; they simply get written over.
-      // One serious disadvantage is, the kernel size is fixed.
-      //outMinus1 = out0;
-      //out0 = out1 + in * kernel[0];
-      //out1 = out2 + in * kernel[1];
-      //out2 = out3 + in * kernel[2];
-      //out3 = out4 + in * kernel[3];
-      //out4 = out5 + in * kernel[4];
-      //out5 = out6 + in * kernel[5];
-      //out6 = out7 + in * kernel[6];
-      //out7 = out8 + in * kernel[7];
-      //out8 = in * kernel[8];
-      
-     outMinus1 = out0;           // previous y value
-     out0 = output[outerPtrX];   // current y value
+      output[KERNEL_LENGTH_MINUS1] = in * kernel[KERNEL_LENGTH_MINUS1];
+      out0 = output[0]; // y at current x index
      
       // plot the output data
       stroke(COLOR_OUTPUT_DATA);
