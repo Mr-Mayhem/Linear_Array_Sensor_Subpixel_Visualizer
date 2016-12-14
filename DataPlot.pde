@@ -9,7 +9,7 @@ class dataPlot {
   int dpDataLen;
   
   float kernelMultiplier; // multiplies the plotted y values of the kernel, for greater visibility since they are small
-  int kernelDrawYOffset;               // height above bottom of screen to draw the kernel data points
+  int kernelDrawYOffset;  // height above bottom of screen to draw the kernel data points
 
   int wDataStartPos;      // the index of the first data point
   int wDataStopPos;       // the index of the last data point
@@ -46,7 +46,7 @@ class dataPlot {
   double preciseMMPos;        // canter position output in mm
   double widthInPixels;       // integer difference between the two peaks without subpixel precision
   double shiftSumX;           // temporary variable for summing x shift values
-  double calibrationCoefficient = 0.9822050932057512;
+  double calibrationCoefficient = 0.9822050932057512; // corrects mm width by multiplying by this value
   
   float d0, d1, d2, d3;       // temp variables which hold derivative values, used instead of another array
   float  XCoord;              // temporary variable for holding a screen X coordinate
