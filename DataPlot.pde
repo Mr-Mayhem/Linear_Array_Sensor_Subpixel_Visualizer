@@ -37,6 +37,7 @@ class dataPlot {
   int posPeakLoc;             // x index position of greatest positive y difference peak found in 1st difference data
   int markSize;               // diameter of drawn subpixel marker circles
   int subpixelMarkerLen;      // length of vertical lines which indicate subpixel peaks and shadow center location
+  int widthInPixels;          // integer difference between the two peaks without subpixel precision
   double negPeakVal;          // value of greatest negative y difference peak found in 1st difference data
   double posPeakVal;          // value of greatest positive y difference peak found in 1st difference data 
   double a1, b1, c1;          // sub pixel quadratic interpolation negative y difference peak and left/right neighbors
@@ -49,7 +50,6 @@ class dataPlot {
   double precisePosition;     // center position output in pixels
   double precisePositionLowPass; // position filtered with simple running average filter
   double preciseMMPos;        // canter position output in mm
-  double widthInPixels;       // integer difference between the two peaks without subpixel precision
   double shiftSumX;           // temporary variable for summing x shift values
   double calibrationCoefficient = 0.9822050932057512; // corrects mm width by multiplying by this value
   
@@ -457,7 +457,7 @@ class dataPlot {
       //println(calibrationCoefficient);
       
       // solve for the center position
-      precisePosition = (((negPeakLoc + negPeakSubPixelLoc) + (posPeakLoc + posPeakSubPixelLoc)) / 2);
+      precisePosition = (((negPeakLoc + negPeakSubPixelLoc) + (posPeakLoc + posPeakSubPixelLoc)) / 2) - 0.5; // d1 is 0.5 left
       precisePositionLowPass = (precisePositionLowPass * 0.9) + (precisePosition * 0.1);
       
       preciseMMPos = precisePositionLowPass * sensorPixelSpacing;
