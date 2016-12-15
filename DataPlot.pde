@@ -457,7 +457,7 @@ class dataPlot {
       //println(calibrationCoefficient);
       
       // solve for the center position
-      precisePosition = (((negPeakLoc + negPeakSubPixelLoc) + (posPeakLoc + posPeakSubPixelLoc)) / 2) - 0.5; // d1 is 0.5 left
+      precisePosition = (((negPeakLoc + negPeakSubPixelLoc) + (posPeakLoc + posPeakSubPixelLoc)) / 2);
       precisePositionLowPass = (precisePositionLowPass * 0.9) + (precisePosition * 0.1);
       
       preciseMMPos = precisePositionLowPass * sensorPixelSpacing;

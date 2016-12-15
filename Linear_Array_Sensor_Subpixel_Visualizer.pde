@@ -150,7 +150,7 @@ void setup() {
   KG1 = new KernelGenerator();
   KG1.setKernelSource(kernelSource);
   // ============================================================================================
-  signalSource = 3;  // <<< <<< Choose a signal source:
+  signalSource = 1;  // <<< <<< Choose a signal source:
   // You are encouraged to try different signal sources, to see how the subpixel code behaves with 
   // nearly perfect waveforms
   // =============================================================================================

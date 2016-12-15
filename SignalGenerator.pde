@@ -28,7 +28,7 @@ class SignalGenerator {
         // a single adjustable step impulse, (square pos or neg pulse) 
         // useful for verifying the kernel is doing what it should.
         
-        sgOutput = setInputSingleImpulse(dataLen, multY, 20, (KERNEL_LENGTH/2)+1, false);
+        sgOutput = setInputSingleImpulse(dataLen, multY, 16, false);
         SENSOR_PIXELS = sgOutput.length;
         break;
       case 2: 
@@ -154,13 +154,13 @@ class SignalGenerator {
     return data;
   }
 
-  int[] setInputSingleImpulse(int dataLength, int multY, int pulseWidth, int offset, boolean positivePolarity){
+  int[] setInputSingleImpulse(int dataLength, int multY, int pulseWidth, boolean positivePolarity){
     
     if (pulseWidth < 2) {
       pulseWidth = 2;
     }
    
-    int center = (dataLength/2) + offset;
+    int center = (dataLength / 2);
     int halfPositives = pulseWidth / 2;
     int startPos = center - halfPositives;
     int stopPos = center + halfPositives;
