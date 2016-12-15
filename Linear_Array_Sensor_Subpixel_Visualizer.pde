@@ -12,9 +12,6 @@ Released into the public domain, except:
 
 See: https://github.com/Mr-Mayhem/DSP_Snippets_For_Processing
 
-Convolution loop code originally from //http://www.dspguide.com/ch6/3.htm
-translated into Processing (java) by Douglas Mayhew
-
  * PanZoomController
  * @author Bohumir Zamecnik, modified by Doug Mayhew Dec 7, 2016
  * @license MIT
@@ -40,9 +37,9 @@ translated into Processing (java) by Douglas Mayhew
 
  This sketch is able to run the subpixel position code against various data sources. 
  The sketch can synthesize test data like square impulses, to verify that the output is 
- doing what it should. It is mainly concerned with processing and displaying live sensor data 
- from a TSL1402R or TSL1410R linear photodiode array, arriving via USB serial port. To feed the data to
- this sketch from these sensors, see my 2 related projects:
+ doing what it should, but this sketch is mainly concerned with displaying and measuring 
+ shadow positions in live sensor serial data from a TSL1402R or TSL1410R linear photodiode array. 
+ To feed this sketch with data from these sensors, see my 2 related projects:
  
  Read-TSL1402R-Optical-Sensor-using-Teensy-3.x
  https://github.com/Mr-Mayhem/Read-TSL1402R-Optical-Sensor-using-Teensy-3.x
