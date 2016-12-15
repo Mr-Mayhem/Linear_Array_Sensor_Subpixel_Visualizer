@@ -23,6 +23,13 @@ class KernelGenerator {
   loGKernelSigma = 1.0;
   }
   
+  public void mouseWheel(int step) {
+    sigma += (step * 0.1);
+    sigma = constrain(sigma, 0.5, 6);
+    gaussianKernelSigma = sigma;
+    kernel = makeGaussKernel1d(gaussianKernelSigma);
+  }
+  
   float [] setKernelSource(int kernelSource) {
     
     switch (kernelSource) {
@@ -46,23 +53,24 @@ class KernelGenerator {
       sigma = 1.4;
       kernel = setKernelArray(gaussian);
     }
-    KERNEL_LENGTH = kernel.length;                 // always odd
-    KERNEL_LENGTH_MINUS1 = KERNEL_LENGTH - 1;      // always even
-    HALF_KERNEL_LENGTH = KERNEL_LENGTH_MINUS1 / 2; // always even divided by 2 = even halves
-    println("KERNEL_LENGTH: " + KERNEL_LENGTH);
     return kernel;
   }
   
   float [] setKernelArray(float [] inArray) {
   
-  float[] kernel = new float[inArray.length]; // set to an odd value for an even integer phase offset
-  kernel = inArray;
-  
-  for (int i = 0; i < kernel.length; i++) {
-    println("setArray kernel[" + i + "] = " + kernel[i]);
-  }
+    float[] kernel = new float[inArray.length]; // set to an odd value for an even integer phase offset
+    kernel = inArray;
     
-  return kernel;
+    for (int i = 0; i < kernel.length; i++) {
+      //println("setArray kernel[" + i + "] = " + kernel[i]);
+    }
+    
+    KERNEL_LENGTH = kernel.length;                 // always odd
+    KERNEL_LENGTH_MINUS1 = KERNEL_LENGTH - 1;      // always even
+    HALF_KERNEL_LENGTH = KERNEL_LENGTH_MINUS1 / 2; // always even divided by 2 = even halves
+    //println("KERNEL_LENGTH: " + KERNEL_LENGTH);
+    
+    return kernel;
   }
   
   float [] makeGaussKernel1d(float sigma) {
@@ -116,7 +124,7 @@ class KernelGenerator {
       fkernel[i] = (float) kernel[i];
       sum += kernel[i];
       // print the kernel value.
-      println("scaled gaussian kernel[" + i + "]:" + fkernel[i]); 
+      //println("scaled gaussian kernel[" + i + "]:" + fkernel[i]); 
     }
     
     if (sum!= 0.0){
@@ -126,7 +134,11 @@ class KernelGenerator {
     }
     
     // print the new scale. Should be very close to 1.
-    println("gaussian kernel new scale = " + scale); 
+    //println("gaussian kernel new scale = " + scale);
+    KERNEL_LENGTH = fkernel.length;                // always odd
+    KERNEL_LENGTH_MINUS1 = KERNEL_LENGTH - 1;      // always even
+    HALF_KERNEL_LENGTH = KERNEL_LENGTH_MINUS1 / 2; // always even divided by 2 = even halves
+    //println("KERNEL_LENGTH: " + KERNEL_LENGTH);
     return fkernel;
   }
   
@@ -149,8 +161,12 @@ class KernelGenerator {
         third = Math.pow(i, 2.0) / second;
         kernel[x] = (double) (first * (1 - third) * Math.exp(-third));
         fkernel[x] = (float) kernel[x];
-        println("LoG kernel[" + x + "] = " + fkernel[x]);
+        //println("LoG kernel[" + x + "] = " + fkernel[x]);
     }
+    KERNEL_LENGTH = fkernel.length;                // always odd
+    KERNEL_LENGTH_MINUS1 = KERNEL_LENGTH - 1;      // always even
+    HALF_KERNEL_LENGTH = KERNEL_LENGTH_MINUS1 / 2; // always even divided by 2 = even halves
+    //println("KERNEL_LENGTH: " + KERNEL_LENGTH);
     return fkernel;
   }
 }

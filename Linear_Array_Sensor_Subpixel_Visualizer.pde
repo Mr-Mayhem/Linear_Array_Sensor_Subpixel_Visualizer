@@ -153,15 +153,14 @@ void setup() {
   KG1 = new KernelGenerator();
   KG1.setKernelSource(kernelSource);
   // ============================================================================================
-  
+  signalSource = 3;  // <<< <<< Choose a signal source:
   // You are encouraged to try different signal sources, to see how the subpixel code behaves with 
   // nearly perfect waveforms
-  signalSource = 2;  // <<< <<< Choose a signal source:
   // =============================================================================================
   
   // Create a dataPlot object, which plots data and provides mouse sliding and zooming ability
   SG1 = new SignalGenerator();
-  sigGenOutput = SG1.signalGeneratorOutput(signalSource, 1024, 2000);
+  sigGenOutput = SG1.signalGeneratorOutput(signalSource, 256, 2000);
   
   // the data length times the number of pixels per data point
   SCREEN_WIDTH = 1024;

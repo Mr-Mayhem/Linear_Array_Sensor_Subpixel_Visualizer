@@ -26,11 +26,11 @@ class dataPlot {
   float scale_x;
   float pan_y;
   float scale_y;
-
-  float drawPtrX = 0;     // phase correction drawing pointers
+  float dpKernelSigma;     // current kernel sigma as determined by kernel Pan Zoom object
+  float dpPrevKernelSigma; // previous kernel sigma as determined by kernel Pan Zoom object
+  float drawPtrX = 0;      // phase correction drawing pointers
   float drawPtrXLessK = 0;
   float drawPtrXLessKandD1 = 0;
-  
   // =============================================================================================
   // Subpixel Variables
   int negPeakLoc;             // x index position of greatest negative y difference peak found in 1st difference data
@@ -62,9 +62,9 @@ class dataPlot {
   float[] output = new float[0];       // array for output signal
   
   // =============================================================================================
-  Legend Legend1;             // One Legend object, lists the colors and what they represent
-  Grid Grid1;                 // One Grid object, draws a grid
-  PanZoomX PZX1;              // pan/zoom object, integer-based for speed
+  Legend Legend1;            // One Legend object, lists the colors and what they represent
+  Grid Grid1;                // One Grid object, draws a grid
+  PanZoomX PanZoomPlot;      // pan/zoom object to control pan & zoom of main data plot
   
   dataPlot (PApplet p, int plotXpos, int plotYpos, int plotWidth, int plotHeight, int plotDataLen) {
     
@@ -74,11 +74,12 @@ class dataPlot {
     dpHeight = plotHeight;
     dpDataLen = plotDataLen;
   
-    PZX1 = new PanZoomX(p);   // Create PanZoom object
-    pan_x = PZX1.getPanX();   // initial pan and zoom values
-    scale_x = PZX1.getScaleX();
-    pan_y = PZX1.getPanY();
-    scale_y = PZX1.getScaleY();
+    PanZoomPlot = new PanZoomX(p, plotDataLen);   // Create PanZoom object to pan & zoom the main data plot
+    
+    pan_x = PanZoomPlot.getPanX();   // initial pan and zoom values
+    scale_x = PanZoomPlot.getScaleX();
+    pan_y = PanZoomPlot.getPanY();
+    scale_y = PanZoomPlot.getScaleY();
     
     // multiplies the plotted y values of the kernel, for greater height visibility since the values in typical kernels are so small
     kernelMultiplier = 100.0;
@@ -102,9 +103,18 @@ class dataPlot {
     Grid1 = new Grid(); 
   }
   
-  boolean over() {
+ boolean overKernel() {
     if (mouseX > 0 && mouseX < dpWidth && 
-      mouseY > 0 && mouseY < SCREEN_HEIGHT + 40) {
+      mouseY > 0 && mouseY > SCREEN_HEIGHT - 120) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+  
+  boolean overPlot() {
+    if (mouseX > 0 && mouseX < dpWidth && 
+      mouseY > 0 && mouseY < SCREEN_HEIGHT - 120) {
       return true;
     } else {
       return false;
@@ -112,35 +122,40 @@ class dataPlot {
   }
 
   void keyPressed() { // we simply pass through the mouse events to the pan zoom object
-    PZX1.keyPressed();
+    PanZoomPlot.keyPressed();
   }
   
   void mouseDragged() {
-    if (over()){
-      PZX1.mouseDragged();
+    if (overPlot()){
+      PanZoomPlot.mouseDragged();
     }
   }
   
   void mouseWheel(int step) {
-    if (over()){
-      PZX1.mouseWheel(step);
+    if (overKernel()){
+        outerPtrX = wDataStopPos;
+        innerPtrX = KERNEL_LENGTH_MINUS1;
+        KG1.mouseWheel(step);
+        output = new float[KERNEL_LENGTH];
+    } else if(overPlot()){
+      PanZoomPlot.mouseWheel(step);
     }
   }
   
   void display() {
     
     // update the local pan and scale variables from the PanZoom object which maintains them
-    pan_x = PZX1.getPanX();
-    scale_x = PZX1.getScaleX();
-    pan_y = PZX1.getPanY();
-    scale_y = PZX1.getScaleY();
-
-
+    pan_x = PanZoomPlot.getPanX();
+    scale_x = PanZoomPlot.getScaleX();
+    pan_y = PanZoomPlot.getPanY();
+    scale_y = PanZoomPlot.getScaleY();
+    
     // The minimum number of input data samples is two times the kernel length + 1,  which results in 
     // the minumum of only one sample processed. (we ignore the fist and last data by one kernel's width)
     
     wDataStartPos = 0;
     wDataStopPos = dpDataLen;
+    
     //wDataStartPos = constrain(wDataStartPos, 0, dpDataLen);
     //wDataStopPos = constrain(wDataStopPos, 0, dpDataLen);
     
@@ -182,7 +197,7 @@ class dataPlot {
       SCREEN_HEIGHT-kernelDrawYOffset - (kernel[outerPtrX] * scale_y) + pan_y);
      }
      fill(255);
-     text("Kernel Sigma: " + sigma, HALF_SCREEN_WIDTH-60, (SCREEN_HEIGHT-20));
+     text("Kernel Sigma: " + String.format("%.1f", sigma), HALF_SCREEN_WIDTH-60, (SCREEN_HEIGHT-20));
   }
 
   void processSerialData(){
@@ -194,7 +209,7 @@ class dataPlot {
     negPeakVal = 0;
     posPeakVal = 0;
 
-    // increment the outer loop pointer from 0 to SENSOR_PIXELS-1
+    // increment the outer loop pointer from wDataStartPos to wDataStopPos - 1
     for (outerPtrX = wDataStartPos; outerPtrX < wDataStopPos; outerPtrX++) {
     
       outerCount++; // lets us index (x axis) on the screen offset from outerPtrX
@@ -256,13 +271,13 @@ class dataPlot {
         // find the the tallest positive and negative peaks in 1st difference of the convolution output data, 
         // which is the point of steepest positive and negative slope
         if (d2 > posPeakVal) {
-          posPeakLoc = outerPtrX-2; // x index -2
+          posPeakLoc = outerPtrX-2 - HALF_KERNEL_LENGTH; // x index -2
           c2=d1; // y value @ x index -1
           b2=d2; // y value @ x index -2 (positive 1st difference peak location)
           a2=d3; // y value @ x index -3
           posPeakVal = d2;
         }else if (d2 < negPeakVal) {
-          negPeakLoc = outerPtrX-2; // x index -2
+          negPeakLoc = outerPtrX-2 - HALF_KERNEL_LENGTH; // x index -2
           c1=d1; // y value @ x index -1
           b1=d2; // y value @ x index -2 (negative 1st difference peak location)
           a1=d3; // y value @ x index -3
@@ -281,7 +296,7 @@ class dataPlot {
     negPeakVal = 0;
     posPeakVal = 0;
 
-    // increment the outer loop pointer from 0 to SENSOR_PIXELS-1
+    // increment the outer loop pointer from wDataStartPos to wDataStopPos - 1
     for (outerPtrX = wDataStartPos; outerPtrX < wDataStopPos; outerPtrX++) {
     
       outerCount++; // lets us index (x axis) on the screen offset from outerPtrX
@@ -341,13 +356,13 @@ class dataPlot {
         // find the the tallest positive and negative peaks in 1st difference of the convolution output data, 
         // which is the point of steepest positive and negative slope
         if (d2 > posPeakVal) {
-          posPeakLoc = outerPtrX-2; // x index -2
+          posPeakLoc = outerPtrX-2 - HALF_KERNEL_LENGTH; // x index -2
           c2=d1; // y value @ x index -1
           b2=d2; // y value @ x index -2 (positive 1st difference peak location)
           a2=d3; // y value @ x index -3
           posPeakVal = d2;
         }else if (d2 < negPeakVal) {
-          negPeakLoc = outerPtrX-2; // x index -2
+          negPeakLoc = outerPtrX-2 - HALF_KERNEL_LENGTH; // x index -2
           c1=d1; // y value @ x index -1
           b1=d2; // y value @ x index -2 (negative 1st difference peak location)
           a1=d3; // y value @ x index -3
@@ -408,7 +423,7 @@ class dataPlot {
     negPeakSubPixelLoc = 0;
     posPeakSubPixelLoc = 0;
     
-    if (negPeakVal<-64 && posPeakVal>64) // check for significant threshold
+    if (negPeakVal < -64 && posPeakVal > 64) // check for significant threshold
     {
       widthInPixels=posPeakLoc-negPeakLoc;
     } else 
@@ -448,7 +463,7 @@ class dataPlot {
       preciseMMPos = precisePositionLowPass * sensorPixelSpacing;
 
        // sum of a few offsets, so we don't need to recalculate
-      shiftSumX =  0.5 + HALF_KERNEL_LENGTH + wDataStartPos - 1; 
+      shiftSumX =  0.5 + wDataStartPos - 1; 
 
       // Mark negPeakSubPixelLoc with red line
       noFill();
@@ -480,7 +495,7 @@ class dataPlot {
       ellipse((float) ((posPeakLoc - shiftSumX + 1) * scale_x) + pan_x,  (float) (HALF_SCREEN_HEIGHT - (c2 * scale_y) + pan_y), markSize, markSize);
       
       XCoord = HALF_SCREEN_WIDTH;
-      YCoord = SCREEN_HEIGHT-120;
+      YCoord = SCREEN_HEIGHT - 120;
       fill(255);
       textSize(14);
       //text("negPeakLoc: " + negPeakLoc, 0, YCoord);

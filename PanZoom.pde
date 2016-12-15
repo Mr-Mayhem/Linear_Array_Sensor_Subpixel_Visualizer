@@ -11,36 +11,7 @@
  * Inspired by "Pan And Zoom" by Dan Thompson, licensed under Creative Commons
  * Attribution-Share Alike 3.0 and GNU GPL license. Work:
  * http://openprocessing.org/visuals/?visualID= 46964
- * 
- * Usage:
- * 
- * <pre>
- * {@code
- * PanZoomController panZoomController;
- * void setup() {
- *   // ...
- *   panZoomController = new PanZoomController(this);
- * }
- * void draw() {
- *   PVector pan = panZoomController.getPan();
- *   pushMatrix();
- *   translate(pan.x, pan.y);
- *   scale(panZoomController.getScale());
- *   // draw ...
- *   popMatrix();
- * }
- * void keyPressed() {
- *   panZoomController.keyPressed();
- * }
- * void mouseDragged() {
- *   panZoomController.mouseDragged();
- * }
- * void mouseWheel(MouseEvent event) {
- *   panZoomController.mouseWheel(event.getCount());
- * }
- * }
- * </pre>
- */
+*/
 
 public class PanZoomX {
 
@@ -57,21 +28,21 @@ public class PanZoomX {
   private float scale_y = 0.125;
   private float pan_x = 0;
   private float pan_y = 0;
-  //private float maxpan_x = 0;
-  //private float maxpan_y = 0;
+  private float maxpan_x = 0;
+  private float maxpan_y = 0;
   
   private PApplet p;
 
-  public PanZoomX(PApplet p) {
+  public PanZoomX(PApplet p, float maxPan_X) {
     this.p = p;
-    //maxpan_x = MaxPanX;
+    maxpan_x = maxPan_X;
   }
 
   public void mouseDragged() {
     int mousex = p.mouseX;
     int pmousex = p.pmouseX;
     pan_x = pan_x + mousex - pmousex;
-    //pan_x = constrain(pan_x, -maxpan_x * scale_x, (maxpan_x * scale_x) + maxpan_x);
+    pan_x = constrain(pan_x, -maxpan_x * scale_x, (maxpan_x * scale_x) + maxpan_x);
     
     
     //int mousey = p.mouseY;
@@ -133,12 +104,28 @@ public class PanZoomX {
     this.pan_x = panX;
   }
   
+  public float getMaxPanX() {
+    return maxpan_x;
+  }
+
+  public void setMaxPanX(float maxPan_X) {
+    this.maxpan_x = maxPan_X;
+  }
+  
   public float getPanY() {
     return pan_y;
   }
 
   public void setPanY(float panY) {
     this.pan_y = panY;
+  }
+  
+  public float getMaxPanY() {
+    return maxpan_y;
+  }
+
+  public void setMaxPanY(float maxPan_Y) {
+    this.maxpan_y = maxPan_Y;
   }
   
   public void setPanVelocity(float panVelocity) {
