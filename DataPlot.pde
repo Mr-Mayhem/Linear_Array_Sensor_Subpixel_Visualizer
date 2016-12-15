@@ -343,9 +343,9 @@ class dataPlot {
       // We skip the first KERNEL_LENGTH of convolution output data, which is garbage from smoothing convolution 
       // kernel not being fully immersed in the input data.
      if (outerCount > KERNEL_LENGTH_MINUS1) {  // skip the first kernel's width of values which are garbage
-        d3=d2; // y value @ x index -3
-        d2=d1; // y value @ x index -2
-        d1=d0; // y value @ x index -1
+        d3=d2; // y value @ x index -3 (left)
+        d2=d1; // y value @ x index -2 (center)
+        d1=d0; // y value @ x index -1 (right)
         d0 = out0 - outMinus1; // the difference between adjacent points, in dsp preferably called the 1st difference
         
         stroke(COLOR_FIRST_DIFFERENCE_OF_OUTPUT);
@@ -357,15 +357,15 @@ class dataPlot {
         // which is the point of steepest positive and negative slope
         if (d2 > posPeakVal) {
           posPeakLoc = outerPtrX-2 - HALF_KERNEL_LENGTH; // x index -2
-          c2=d1; // y value @ x index -1
-          b2=d2; // y value @ x index -2 (positive 1st difference peak location)
-          a2=d3; // y value @ x index -3
+          c2=d1; // y value @ x index -1 (right)
+          b2=d2; // y value @ x index -2 (center) (positive 1st difference peak location)
+          a2=d3; // y value @ x index -3 (left)
           posPeakVal = d2;
         }else if (d2 < negPeakVal) {
           negPeakLoc = outerPtrX-2 - HALF_KERNEL_LENGTH; // x index -2
-          c1=d1; // y value @ x index -1
-          b1=d2; // y value @ x index -2 (negative 1st difference peak location)
-          a1=d3; // y value @ x index -3
+          c1=d1; // y value @ x index -1 (right)
+          b1=d2; // y value @ x index -2 (center) (negative 1st difference peak location)
+          a1=d3; // y value @ x index -3 (left)
           negPeakVal = d2;
         }
       }
