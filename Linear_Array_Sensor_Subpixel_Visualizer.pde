@@ -157,7 +157,7 @@ void setup() {
   
   // Create a dataPlot object, which plots data and provides mouse sliding and zooming ability
   SG1 = new SignalGenerator();
-  sigGenOutput = SG1.signalGeneratorOutput(signalSource, 256, 2000);
+  sigGenOutput = SG1.signalGeneratorOutput(signalSource, 128, 2000);
   
   // the data length times the number of pixels per data point
   SCREEN_WIDTH = 1024;

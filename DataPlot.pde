@@ -271,16 +271,16 @@ class dataPlot {
         // find the the tallest positive and negative peaks in 1st difference of the convolution output data, 
         // which is the point of steepest positive and negative slope
         if (d2 > posPeakVal) {
-          posPeakLoc = outerPtrX-2 - HALF_KERNEL_LENGTH; // x index -2
-          c2=d1; // y value @ x index -1
-          b2=d2; // y value @ x index -2 (positive 1st difference peak location)
-          a2=d3; // y value @ x index -3
+          posPeakLoc = (outerPtrX-2) - HALF_KERNEL_LENGTH; // x index -2
+          c2=d1; // y value @ x index -1 (right)
+          b2=d2; // y value @ x index -2 (center) (positive 1st difference peak location)
+          a2=d3; // y value @ x index -3 (left)
           posPeakVal = d2;
         }else if (d2 < negPeakVal) {
-          negPeakLoc = outerPtrX-2 - HALF_KERNEL_LENGTH; // x index -2
-          c1=d1; // y value @ x index -1
-          b1=d2; // y value @ x index -2 (negative 1st difference peak location)
-          a1=d3; // y value @ x index -3
+          negPeakLoc = (outerPtrX-2) - HALF_KERNEL_LENGTH; // x index -2
+          c1=d1; // y value @ x index -1 (right)
+          b1=d2; // y value @ x index -2 (center) (negative 1st difference peak location)
+          a1=d3; // y value @ x index -3 (left)
           negPeakVal = d2;
         }
       }
@@ -356,13 +356,13 @@ class dataPlot {
         // find the the tallest positive and negative peaks in 1st difference of the convolution output data, 
         // which is the point of steepest positive and negative slope
         if (d2 > posPeakVal) {
-          posPeakLoc = outerPtrX-2 - HALF_KERNEL_LENGTH; // x index -2
+          posPeakLoc = (outerPtrX-2) - HALF_KERNEL_LENGTH; // x index -2
           c2=d1; // y value @ x index -1 (right)
           b2=d2; // y value @ x index -2 (center) (positive 1st difference peak location)
           a2=d3; // y value @ x index -3 (left)
           posPeakVal = d2;
         }else if (d2 < negPeakVal) {
-          negPeakLoc = outerPtrX-2 - HALF_KERNEL_LENGTH; // x index -2
+          negPeakLoc = (outerPtrX-2) - HALF_KERNEL_LENGTH; // x index -2
           c1=d1; // y value @ x index -1 (right)
           b1=d2; // y value @ x index -2 (center) (negative 1st difference peak location)
           a1=d3; // y value @ x index -3 (left)
@@ -428,7 +428,7 @@ class dataPlot {
       widthInPixels=posPeakLoc-negPeakLoc;
     } else 
     {
-      widthInPixels=0;
+      widthInPixels = 0;
     }
 
     // check for width in acceptable range, what is acceptable is up to you, within reason.
@@ -463,7 +463,7 @@ class dataPlot {
       preciseMMPos = precisePositionLowPass * sensorPixelSpacing;
 
        // sum of a few offsets, so we don't need to recalculate
-      shiftSumX =  0.5 + wDataStartPos - 1; 
+      shiftSumX = wDataStartPos - 0.5; 
 
       // Mark negPeakSubPixelLoc with red line
       noFill();

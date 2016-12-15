@@ -138,7 +138,7 @@ class KernelGenerator {
     KERNEL_LENGTH = fkernel.length;                // always odd
     KERNEL_LENGTH_MINUS1 = KERNEL_LENGTH - 1;      // always even
     HALF_KERNEL_LENGTH = KERNEL_LENGTH_MINUS1 / 2; // always even divided by 2 = even halves
-    //println("KERNEL_LENGTH: " + KERNEL_LENGTH);
+    println("KERNEL_LENGTH: " + KERNEL_LENGTH);
     return fkernel;
   }
   
@@ -166,7 +166,7 @@ class KernelGenerator {
     KERNEL_LENGTH = fkernel.length;                // always odd
     KERNEL_LENGTH_MINUS1 = KERNEL_LENGTH - 1;      // always even
     HALF_KERNEL_LENGTH = KERNEL_LENGTH_MINUS1 / 2; // always even divided by 2 = even halves
-    //println("KERNEL_LENGTH: " + KERNEL_LENGTH);
+    println("KERNEL_LENGTH: " + KERNEL_LENGTH);
     return fkernel;
   }
 }
