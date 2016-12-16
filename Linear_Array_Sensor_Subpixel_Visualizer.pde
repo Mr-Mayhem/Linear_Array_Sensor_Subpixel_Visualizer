@@ -160,7 +160,7 @@ void setup() {
   sigGenOutput = SG1.signalGeneratorOutput(signalSource, 64, 2000);
   
   // the data length times the number of pixels per data point
-  SCREEN_WIDTH = 1024;
+  SCREEN_WIDTH = 1280;
   HALF_SCREEN_WIDTH = SCREEN_WIDTH / 2;
   
   // set the screen dimensions

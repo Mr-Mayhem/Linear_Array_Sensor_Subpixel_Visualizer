@@ -514,17 +514,17 @@ class dataPlot {
       YCoord = SCREEN_HEIGHT - 140;
       fill(255);
       textSize(14);
-      text("negPeakLoc: " + negPeakLoc, 50, YCoord);
-      text("posPeakLoc: " + posPeakLoc, 275, YCoord);
-      text("negSubPixelLoc: " + String.format("%.3f", negPeakSubPixelLoc), 525, YCoord);
-      text("posSubPixelLoc: " + String.format("%.3f", posPeakSubPixelLoc), 725, YCoord);
+      text("negPeakLoc: " + negPeakLoc, HALF_SCREEN_WIDTH - 450, YCoord);
+      text("posPeakLoc: " + posPeakLoc, HALF_SCREEN_WIDTH - 250, YCoord);
+      text("negSubPixelLoc: " + String.format("%.3f", negPeakSubPixelLoc), HALF_SCREEN_WIDTH + 50, YCoord);
+      text("posSubPixelLoc: " + String.format("%.3f", posPeakSubPixelLoc), HALF_SCREEN_WIDTH + 275, YCoord);
       
       YCoord += 20;
       
-      text("Width in Pixels: " + String.format("%.3f", preciseWidthLowPass), 50, YCoord);
-      text("Position in Pixels = " + String.format("%.3f", precisePositionLowPass), 275, YCoord);
-      text("Width mm: " + String.format("%.5f", preciseWidthMM), 525, YCoord);
-      text("Position mm: " + String.format("%.5f", preciseMMPos), 725, YCoord);
+      text("Width in Pixels: " + String.format("%.3f", preciseWidthLowPass), HALF_SCREEN_WIDTH -450, YCoord);
+      text("Position in Pixels = " + String.format("%.3f", precisePositionLowPass), HALF_SCREEN_WIDTH - 250, YCoord);
+      text("Width mm: " + String.format("%.5f", preciseWidthMM), HALF_SCREEN_WIDTH + 50, YCoord);
+      text("Position mm: " + String.format("%.5f", preciseMMPos), HALF_SCREEN_WIDTH + 275, YCoord);
     }
   }
 }
