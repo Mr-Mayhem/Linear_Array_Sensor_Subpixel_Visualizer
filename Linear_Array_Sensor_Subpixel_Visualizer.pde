@@ -145,19 +145,19 @@ void setup() {
   HALF_SCREEN_HEIGHT = SCREEN_HEIGHT / 2;
   
   // ============================================================================================
-  kernelSource = 0; // <<< <<< Choose a kernel source:
+  kernelSource = 0; // <<< <<< Choose a kernel source 0 = dynamically created gaussian:
   // Create a kernelGenerator object, which creates a kernel and saves it's data into an array
   KG1 = new KernelGenerator();
   KG1.setKernelSource(kernelSource);
   // ============================================================================================
-  signalSource = 1;  // <<< <<< Choose a signal source:
+  signalSource = 0;  // <<< <<< Choose a signal source, 0 = raw data, 1 square pulse, 2 square wave, 3 serial data:
   // You are encouraged to try different signal sources, to see how the subpixel code behaves with 
   // nearly perfect waveforms
   // =============================================================================================
   
   // Create a dataPlot object, which plots data and provides mouse sliding and zooming ability
   SG1 = new SignalGenerator();
-  sigGenOutput = SG1.signalGeneratorOutput(signalSource, 128, 2000);
+  sigGenOutput = SG1.signalGeneratorOutput(signalSource, 64, 2000);
   
   // the data length times the number of pixels per data point
   SCREEN_WIDTH = 1024;

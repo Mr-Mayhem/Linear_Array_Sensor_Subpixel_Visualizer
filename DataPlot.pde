@@ -8,9 +8,9 @@ class dataPlot {
   int dpHeight;
   int dpDataLen;
   
-  int in;                  // a single convolution input y value
-  float outMinus1;         // the previous convolution output y value
-  float out0;              // the current convolution output y value
+  int input;              // a single convolution input y value
+  float cOutPrev;         // the previous convolution output y value
+  float cOut;             // the current convolution output y value
   
   
   float kernelMultiplier; // multiplies the plotted y values of the kernel, for greater visibility since they are small
@@ -30,32 +30,45 @@ class dataPlot {
   float dpPrevKernelSigma; // previous kernel sigma as determined by kernel Pan Zoom object
   float drawPtrX = 0;      // phase correction drawing pointers
   float drawPtrXLessK = 0;
-  float drawPtrXLessKandD1 = 0;
+  float drawPtrXLessKlessD1 = 0;
   // =============================================================================================
   // Subpixel Variables
-  int negPeakLoc;             // x index position of greatest negative y difference peak found in 1st difference data
-  int posPeakLoc;             // x index position of greatest positive y difference peak found in 1st difference data
-  int markSize;               // diameter of drawn subpixel marker circles
-  int subpixelMarkerLen;      // length of vertical lines which indicate subpixel peaks and shadow center location
-  int widthInPixels;          // integer difference between the two peaks without subpixel precision
+  float negPeakLoc;           // x index position of greatest negative y difference peak found in 1st difference data
+  float posPeakLoc;           // x index position of greatest positive y difference peak found in 1st difference data
+  
+  float widthInPixels;        // integer difference between the two peaks without subpixel precision
+  
   double negPeakVal;          // value of greatest negative y difference peak found in 1st difference data
   double posPeakVal;          // value of greatest positive y difference peak found in 1st difference data 
-  double a1, b1, c1;          // sub pixel quadratic interpolation negative y difference peak and left/right neighbors
-  double a2, b2, c2;          // sub pixel quadratic interpolation positive y difference peak and left/right neighbors
+  
+  double negPeakLeftPixel;    // y value of left neighbor (x - 1) of greatest 1st difference negative peak
+  double negPeakCenterPixel;  // y value of 1st difference (x) of greatest negative peak
+  double negPeakRightPixel;   // y value of right neighbor (x + 1) of greatest 1st difference negative peak
+  
+  double posPeakLeftPixel;    // y value of left neighbor (x - 1) of greatest 1st difference positive peak
+  double posPeakCenterPixel;  // y value of 1st difference (x) of greatest positive peak
+  double posPeakRightPixel;   // y value of right neighbor (x + 1) of greatest 1st difference positive peak
+  
   double negPeakSubPixelLoc;  // quadratic interpolated negative peak subpixel x position; 
   double posPeakSubPixelLoc;  // quadratic interpolated positive peak subpixel x position
+  
   double preciseWidth;        // filament width output in pixels
   double preciseWidthLowPass; // width filtered with simple running average filter
   double preciseWidthMM;      // filament width output in mm
+  
   double precisePosition;     // center position output in pixels
   double precisePositionLowPass; // position filtered with simple running average filter
   double preciseMMPos;        // canter position output in mm
-  double shiftSumX;           // temporary variable for summing x shift values
-  double calibrationCoefficient = 0.9822050932057512; // corrects mm width by multiplying by this value
   
-  float d0, d1, d2, d3;       // temp variables which hold derivative values, used instead of another array
+  double shiftSumX;           // temporary variable for summing x shift values
+  double calibrationCoefficient = 0.981; // corrects mm width by multiplying by this value
+  
+  float diff0, diff1, diff2;       // temp variables which hold derivative values, used instead of another array
   float  XCoord;              // temporary variable for holding a screen X coordinate
   float  YCoord;              // temporary variable for holding a screen Y coordinate
+  
+  int markSize;               // diameter of drawn subpixel marker circles
+  int subpixelMarkerLen;      // length of vertical lines which indicate subpixel peaks and shadow center location
   // =============================================================================================
   //Arrays
   
@@ -197,18 +210,20 @@ class dataPlot {
       SCREEN_HEIGHT-kernelDrawYOffset - (kernel[outerPtrX] * scale_y) + pan_y);
      }
      fill(255);
-     text("Kernel Sigma: " + String.format("%.1f", sigma), HALF_SCREEN_WIDTH-60, (SCREEN_HEIGHT-20));
+     text("Use mouse wheel here to adjust kernel", HALF_SCREEN_WIDTH-130, (SCREEN_HEIGHT-50));
+     text("Kernel Sigma: " + String.format("%.1f", sigma), HALF_SCREEN_WIDTH-60, (SCREEN_HEIGHT-30));
+     text("Kernel Length: " + KERNEL_LENGTH, HALF_SCREEN_WIDTH-60, (SCREEN_HEIGHT-10));
   }
 
   void processSerialData(){
   
     int outerCount = 0;
-    
+      
     negPeakLoc = wDataStopPos; // one past the last pixel, to prevent false positives?
     posPeakLoc = wDataStopPos; // one past the last pixel, to prevent false positives?
     negPeakVal = 0;
     posPeakVal = 0;
-
+      
     // increment the outer loop pointer from wDataStartPos to wDataStopPos - 1
     for (outerPtrX = wDataStartPos; outerPtrX < wDataStopPos; outerPtrX++) {
     
@@ -221,67 +236,68 @@ class dataPlot {
     
       // shift left by half the kernel size to correct for convolution shift (dead-on correct for odd-size kernels)
       drawPtrXLessK = ((outerCount - HALF_KERNEL_LENGTH) * scale_x) + pan_x; 
-      
-      // shift left by half the kernel length and,
-      // shift left by half a data point increment to properly position the 1st difference points in-beween the original data points.
-      drawPtrXLessKandD1 = ((outerCount - HALF_KERNEL_LENGTH -0.5) * scale_x) + pan_x;
  
+      drawPtrXLessKlessD1 = (((outerCount - HALF_KERNEL_LENGTH) - 0.5) * scale_x) + pan_x;
+       
+       
       // parse one pixel data value from the serial port data byte array:
       // Read a pair of bytes from the byte array, convert them into an integer, 
       // shift right 2 places(divide by 4), and copy result to 'in'
-      in = (byteArray[outerPtrX<<1]<< 8 | (byteArray[(outerPtrX<<1) + 1] & 0xFF))>>2;
+      input = (byteArray[outerPtrX<<1]<< 8 | (byteArray[(outerPtrX<<1) + 1] & 0xFF))>>2;
       
-      // plot original data point
+      // plot original data value
       stroke(COLOR_ORIGINAL_DATA);
       
-      point(drawPtrX, HALF_SCREEN_HEIGHT - (in * scale_y) + pan_y);
+      point(drawPtrX, HALF_SCREEN_HEIGHT - (input * scale_y) + pan_y);
       // draw section of greyscale bar showing the 'color' of original data values
-      greyscaleBarMapped(drawPtrX, scale_x, 0, in);
+      greyscaleBarMapped(drawPtrX, scale_x, 0, input);
       
       // convolution inner loop
-      outMinus1 = out0; // y at previous x index
+      cOutPrev = cOut; // y[output-1]
       for (innerPtrX = 0; innerPtrX < KERNEL_LENGTH_MINUS1; innerPtrX++) { // increment the inner loop pointer
-        output[innerPtrX] = output[innerPtrX+1] + in * kernel[innerPtrX];  // convolve: multiply and accumulate
+        output[innerPtrX] = output[innerPtrX+1] + input * kernel[innerPtrX];  // convolve: multiply and accumulate
       }
-      output[KERNEL_LENGTH_MINUS1] = in * kernel[KERNEL_LENGTH_MINUS1];
-      out0 = output[0]; // y at current x index
-     
-      // plot the output data
+      output[KERNEL_LENGTH_MINUS1] = input * kernel[KERNEL_LENGTH_MINUS1];
+      cOut = output[0]; // y[output]
+      
+      diff2=diff1;      // (left of peak)
+      diff1=diff0;      // (center peak y value)  
+      // find 1st difference of the convolved data, the difference between adjacent points in the smoothed data.
+      diff0 = cOut - cOutPrev; // (right of peak) y[x] - y[x-1], in dsp preferably called the 1st difference.
+      // difference between the current smoothed y value and the previous one
+      
+      // plot the output data value
       stroke(COLOR_OUTPUT_DATA);
-      point(drawPtrXLessK, HALF_SCREEN_HEIGHT - (out0 * scale_y) + pan_y);
+      point(drawPtrXLessK, HALF_SCREEN_HEIGHT - (cOut * scale_y) + pan_y);
       //println("output[" + outerPtrX + "]" +output[outerPtrX]);
      
       // draw section of greyscale bar showing the 'color' of output data values
-      greyscaleBarMapped(drawPtrXLessK, scale_x, 11, out0);
+      greyscaleBarMapped(drawPtrXLessK, scale_x, 11, cOut);
       
-      // find 1st difference of the convolved data, the difference between adjacent points in the smoothed data.
+      // plot the first difference data value
+      stroke(COLOR_FIRST_DIFFERENCE_OF_OUTPUT);
+      point((drawPtrXLessKlessD1), HALF_SCREEN_HEIGHT - (diff0 * scale_y) + pan_y);
+      // draw section of greyscale bar showing the 'color' of output2 data values
+      //void greyscaleBarMapped(float x, float scale_x, float y, float value) {
+      greyscaleBarMappedAbs((drawPtrXLessKlessD1), scale_x, 22, diff0);
+      
+      // find the the tallest positive and negative peaks in 1st difference of the convolution output data, 
+      // which is the point of steepest positive and negative slope
       // We skip the first KERNEL_LENGTH of convolution output data, which is garbage from smoothing convolution 
       // kernel not being fully immersed in the input data.
-     if (outerCount > KERNEL_LENGTH_MINUS1) {  // skip the first kernel's width of values which are garbage
-        d3=d2; // y value @ x index -3
-        d2=d1; // y value @ x index -2
-        d1=d0; // y value @ x index -1
-        d0 = out0 - outMinus1; // the difference between adjacent points, in dsp preferably called the 1st difference
-        
-        stroke(COLOR_FIRST_DIFFERENCE_OF_OUTPUT);
-        point(drawPtrXLessKandD1, HALF_SCREEN_HEIGHT - (d0 * scale_y) + pan_y);
-        // draw section of greyscale bar showing the 'color' of output2 data values
-        //void greyscaleBarMapped(float x, float scale_x, float y, float value) {
-        greyscaleBarMappedAbs(drawPtrXLessKandD1, scale_x, 22, d0);
-        // find the the tallest positive and negative peaks in 1st difference of the convolution output data, 
-        // which is the point of steepest positive and negative slope
-        if (d2 > posPeakVal) {
-          posPeakLoc = (outerPtrX-2) - HALF_KERNEL_LENGTH; // x index -2
-          c2=d1; // y value @ x index -1 (right)
-          b2=d2; // y value @ x index -2 (center) (positive 1st difference peak location)
-          a2=d3; // y value @ x index -3 (left)
-          posPeakVal = d2;
-        }else if (d2 < negPeakVal) {
-          negPeakLoc = (outerPtrX-2) - HALF_KERNEL_LENGTH; // x index -2
-          c1=d1; // y value @ x index -1 (right)
-          b1=d2; // y value @ x index -2 (center) (negative 1st difference peak location)
-          a1=d3; // y value @ x index -3 (left)
-          negPeakVal = d2;
+      if (outerCount > KERNEL_LENGTH_MINUS1) {  // skip the first kernel's width of values which are garbage
+        if (diff1 > posPeakVal) {
+          posPeakVal = diff1;
+          posPeakLoc = (outerPtrX - 1.5) - HALF_KERNEL_LENGTH; // x-1
+          posPeakRightPixel = diff0;   // y value @ x index -1 (right)
+          posPeakCenterPixel = diff1;  // y value @ x index -2 (center) (positive 1st difference peak location)
+          posPeakLeftPixel = diff2;    // y value @ x index -3 (left)
+        }else if (diff1 < negPeakVal) {
+          negPeakVal = diff1;
+          negPeakLoc = (outerPtrX - 1.5) - HALF_KERNEL_LENGTH; // x-1
+          negPeakRightPixel = diff0;   // y value @ x index -1 (right)
+          negPeakCenterPixel = diff1;  // y value @ x index -2 (center) (negative 1st difference peak location)
+          negPeakLeftPixel = diff2;    // y value @ x index -3 (left)
         }
       }
     }
@@ -290,12 +306,12 @@ class dataPlot {
   void processSignalGeneratorData(){
     
     int outerCount = 0;
-    
+      
     negPeakLoc = wDataStopPos; // one past the last pixel, to prevent false positives?
     posPeakLoc = wDataStopPos; // one past the last pixel, to prevent false positives?
     negPeakVal = 0;
     posPeakVal = 0;
-
+      
     // increment the outer loop pointer from wDataStartPos to wDataStopPos - 1
     for (outerPtrX = wDataStartPos; outerPtrX < wDataStopPos; outerPtrX++) {
     
@@ -308,65 +324,66 @@ class dataPlot {
     
       // shift left by half the kernel size to correct for convolution shift (dead-on correct for odd-size kernels)
       drawPtrXLessK = ((outerCount - HALF_KERNEL_LENGTH) * scale_x) + pan_x; 
-      
-      // shift left by half the kernel length and,
-      // shift left by half a data point increment to properly position the 1st difference points in-beween the original data points.
-      drawPtrXLessKandD1 = ((outerCount - HALF_KERNEL_LENGTH -0.5) * scale_x) + pan_x;
  
+      drawPtrXLessKlessD1 = (((outerCount - HALF_KERNEL_LENGTH) - 0.5) * scale_x) + pan_x;
+       
+       
       // copy one data value from the signal generator output array:
-      in = sigGenOutput[outerPtrX];
+      input = sigGenOutput[outerPtrX];
       
-      // plot original data point
+      // plot original data value
       stroke(COLOR_ORIGINAL_DATA);
       
-      point(drawPtrX, HALF_SCREEN_HEIGHT - (in * scale_y) + pan_y);
+      point(drawPtrX, HALF_SCREEN_HEIGHT - (input * scale_y) + pan_y);
       // draw section of greyscale bar showing the 'color' of original data values
-      greyscaleBarMapped(drawPtrX, scale_x, 0, in);
+      greyscaleBarMapped(drawPtrX, scale_x, 0, input);
       
       // convolution inner loop
-      outMinus1 = out0; // y at previous x index
+      cOutPrev = cOut; // y[output-1]
       for (innerPtrX = 0; innerPtrX < KERNEL_LENGTH_MINUS1; innerPtrX++) { // increment the inner loop pointer
-        output[innerPtrX] = output[innerPtrX+1] + in * kernel[innerPtrX];  // convolve: multiply and accumulate
+        output[innerPtrX] = output[innerPtrX+1] + input * kernel[innerPtrX];  // convolve: multiply and accumulate
       }
-      output[KERNEL_LENGTH_MINUS1] = in * kernel[KERNEL_LENGTH_MINUS1];
-      out0 = output[0]; // y at current x index
-     
-      // plot the output data
+      output[KERNEL_LENGTH_MINUS1] = input * kernel[KERNEL_LENGTH_MINUS1];
+      cOut = output[0]; // y[output]
+      
+      diff2=diff1;      // (left of peak)
+      diff1=diff0;      // (center peak y value)  
+      // find 1st difference of the convolved data, the difference between adjacent points in the smoothed data.
+      diff0 = cOut - cOutPrev; // (right of peak) y[x] - y[x-1], in dsp preferably called the 1st difference.
+      // difference between the current smoothed y value and the previous one
+      
+      // plot the output data value
       stroke(COLOR_OUTPUT_DATA);
-      point(drawPtrXLessK, HALF_SCREEN_HEIGHT - (out0 * scale_y) + pan_y);
+      point(drawPtrXLessK, HALF_SCREEN_HEIGHT - (cOut * scale_y) + pan_y);
       //println("output[" + outerPtrX + "]" +output[outerPtrX]);
      
       // draw section of greyscale bar showing the 'color' of output data values
-      greyscaleBarMapped(drawPtrXLessK, scale_x, 11, out0);
+      greyscaleBarMapped(drawPtrXLessK, scale_x, 11, cOut);
       
-      // find 1st difference of the convolved data, the difference between adjacent points in the smoothed data.
+      // plot the first difference data value
+      stroke(COLOR_FIRST_DIFFERENCE_OF_OUTPUT);
+      point((drawPtrXLessKlessD1), HALF_SCREEN_HEIGHT - (diff0 * scale_y) + pan_y);
+      // draw section of greyscale bar showing the 'color' of output2 data values
+      //void greyscaleBarMapped(float x, float scale_x, float y, float value) {
+      greyscaleBarMappedAbs((drawPtrXLessKlessD1), scale_x, 22, diff0);
+      
+      // find the the tallest positive and negative peaks in 1st difference of the convolution output data, 
+      // which is the point of steepest positive and negative slope
       // We skip the first KERNEL_LENGTH of convolution output data, which is garbage from smoothing convolution 
       // kernel not being fully immersed in the input data.
-     if (outerCount > KERNEL_LENGTH_MINUS1) {  // skip the first kernel's width of values which are garbage
-        d3=d2; // y value @ x index -3 (left)
-        d2=d1; // y value @ x index -2 (center)
-        d1=d0; // y value @ x index -1 (right)
-        d0 = out0 - outMinus1; // the difference between adjacent points, in dsp preferably called the 1st difference
-        
-        stroke(COLOR_FIRST_DIFFERENCE_OF_OUTPUT);
-        point(drawPtrXLessKandD1, HALF_SCREEN_HEIGHT - (d0 * scale_y) + pan_y);
-        // draw section of greyscale bar showing the 'color' of output2 data values
-        //void greyscaleBarMapped(float x, float scale_x, float y, float value) {
-        greyscaleBarMappedAbs(drawPtrXLessKandD1, scale_x, 22, d0);
-        // find the the tallest positive and negative peaks in 1st difference of the convolution output data, 
-        // which is the point of steepest positive and negative slope
-        if (d2 > posPeakVal) {
-          posPeakLoc = (outerPtrX-2) - HALF_KERNEL_LENGTH; // x index -2
-          c2=d1; // y value @ x index -1 (right)
-          b2=d2; // y value @ x index -2 (center) (positive 1st difference peak location)
-          a2=d3; // y value @ x index -3 (left)
-          posPeakVal = d2;
-        }else if (d2 < negPeakVal) {
-          negPeakLoc = (outerPtrX-2) - HALF_KERNEL_LENGTH; // x index -2
-          c1=d1; // y value @ x index -1 (right)
-          b1=d2; // y value @ x index -2 (center) (negative 1st difference peak location)
-          a1=d3; // y value @ x index -3 (left)
-          negPeakVal = d2;
+      if (outerCount > KERNEL_LENGTH_MINUS1) {  // skip the first kernel's width of values which are garbage
+        if (diff1 > posPeakVal) {
+          posPeakVal = diff1;
+          posPeakLoc = (outerPtrX - 1.5) - HALF_KERNEL_LENGTH; // x-1
+          posPeakRightPixel = diff0;   // y value @ x index -1 (right)
+          posPeakCenterPixel = diff1;  // y value @ x index -2 (center) (positive 1st difference peak location)
+          posPeakLeftPixel = diff2;    // y value @ x index -3 (left)
+        }else if (diff1 < negPeakVal) {
+          negPeakVal = diff1;
+          negPeakLoc = (outerPtrX - 1.5) - HALF_KERNEL_LENGTH; // x-1
+          negPeakRightPixel = diff0;   // y value @ x index -1 (right)
+          negPeakCenterPixel = diff1;  // y value @ x index -2 (center) (negative 1st difference peak location)
+          negPeakLeftPixel = diff2;    // y value @ x index -3 (left)
         }
       }
     }
@@ -440,30 +457,30 @@ class dataPlot {
       
       // for the subpixel value of the greatest negative peak found above, 
       // corresponds with the left edge of a narrow shadow cast upon the sensor
-      negPeakSubPixelLoc = 0.5 * (a1 - c1) / (a1 - 2 * b1 + c1);
+      negPeakSubPixelLoc = 0.5 * (negPeakLeftPixel - negPeakRightPixel) / (negPeakLeftPixel - (2 * negPeakCenterPixel) + negPeakRightPixel);
       
       // for the subpixel value of the greatest positive peak found above, 
       // corresponds with the right edge of a narrow shadow cast upon the sensor
-      posPeakSubPixelLoc = 0.5 * (a2 - c2) / (a2 - 2 * b2 + c2);
+      posPeakSubPixelLoc = 0.5 * (posPeakLeftPixel - posPeakRightPixel) / (posPeakLeftPixel - (2 * posPeakCenterPixel) + posPeakRightPixel);
 
       // original function translated from flipper's filament width sensor; does the same math calculation as above
       // negPeakSubPixelLoc=((a1-c1) / (a1+c1-(b1*2)))/2;
       // posPeakSubPixelLoc=((a2-c2) / (a2+c2-(b2*2)))/2;
 
       preciseWidth = widthInPixels + (posPeakSubPixelLoc - negPeakSubPixelLoc);
-      preciseWidthLowPass = (preciseWidthLowPass * 0.9) + (preciseWidth * 0.1);
+      preciseWidthLowPass = (preciseWidthLowPass * 0.9) + (preciseWidth * 0.1);            // apply a simple low pass filter
       preciseWidthMM = preciseWidthLowPass * sensorPixelSpacing * calibrationCoefficient;
 
       //println(calibrationCoefficient);
       
       // solve for the center position
       precisePosition = (((negPeakLoc + negPeakSubPixelLoc) + (posPeakLoc + posPeakSubPixelLoc)) / 2);
-      precisePositionLowPass = (precisePositionLowPass * 0.9) + (precisePosition * 0.1);
+      precisePositionLowPass = (precisePositionLowPass * 0.9) + (precisePosition * 0.1);   // apply a simple low pass filter
       
       preciseMMPos = precisePositionLowPass * sensorPixelSpacing;
 
        // sum of a few offsets, so we don't need to recalculate
-      shiftSumX = wDataStartPos - 0.5; 
+      shiftSumX = wDataStartPos - 1; 
 
       // Mark negPeakSubPixelLoc with red line
       noFill();
@@ -484,28 +501,30 @@ class dataPlot {
 
       // Mark negPeakLoc 3 pixel cluster with one red circle each
       stroke(255, 0, 0);
-      ellipse((float) ((negPeakLoc - shiftSumX - 1) * scale_x) + pan_x, (float) (HALF_SCREEN_HEIGHT - (a1 * scale_y) + pan_y), markSize, markSize);
-      ellipse((float) ((negPeakLoc - shiftSumX) * scale_x) + pan_x, (float) (HALF_SCREEN_HEIGHT - (b1 * scale_y) + pan_y), markSize, markSize);
-      ellipse((float) ((negPeakLoc - shiftSumX + 1) * scale_x) + pan_x, (float) (HALF_SCREEN_HEIGHT - (c1 * scale_y) + pan_y), markSize, markSize);
+      ellipse((float) ((negPeakLoc - shiftSumX - 1) * scale_x) + pan_x, (float) (HALF_SCREEN_HEIGHT - (negPeakLeftPixel * scale_y) + pan_y), markSize, markSize);
+      ellipse((float) ((negPeakLoc - shiftSumX - 0) * scale_x) + pan_x, (float) (HALF_SCREEN_HEIGHT - (negPeakCenterPixel * scale_y) + pan_y), markSize, markSize);
+      ellipse((float) ((negPeakLoc - shiftSumX + 1) * scale_x) + pan_x, (float) (HALF_SCREEN_HEIGHT - (negPeakRightPixel * scale_y) + pan_y), markSize, markSize);
 
       // Mark posPeakLoc 3 pixel cluster with one green circle each
       stroke(0, 255, 0);
-      ellipse((float) ((posPeakLoc - shiftSumX - 1) * scale_x) + pan_x, (float) (HALF_SCREEN_HEIGHT - (a2 * scale_y) + pan_y), markSize, markSize);
-      ellipse((float) ((posPeakLoc - shiftSumX) * scale_x) + pan_x,  (float) (HALF_SCREEN_HEIGHT - (b2 * scale_y) + pan_y), markSize, markSize);
-      ellipse((float) ((posPeakLoc - shiftSumX + 1) * scale_x) + pan_x,  (float) (HALF_SCREEN_HEIGHT - (c2 * scale_y) + pan_y), markSize, markSize);
+      ellipse((float) ((posPeakLoc - shiftSumX - 1) * scale_x) + pan_x, (float) (HALF_SCREEN_HEIGHT - (posPeakLeftPixel * scale_y) + pan_y), markSize, markSize);
+      ellipse((float) ((posPeakLoc - shiftSumX - 0) * scale_x) + pan_x,  (float) (HALF_SCREEN_HEIGHT - (posPeakCenterPixel * scale_y) + pan_y), markSize, markSize);
+      ellipse((float) ((posPeakLoc - shiftSumX + 1) * scale_x) + pan_x,  (float) (HALF_SCREEN_HEIGHT - (posPeakRightPixel * scale_y) + pan_y), markSize, markSize);
       
-      XCoord = HALF_SCREEN_WIDTH;
-      YCoord = SCREEN_HEIGHT - 120;
+      YCoord = SCREEN_HEIGHT - 140;
       fill(255);
       textSize(14);
-      //text("negPeakLoc: " + negPeakLoc, 0, YCoord);
-      //text("posPeakLoc: " + posPeakLoc, 125, YCoord);
-      //text("negPeakSubPixelLoc: " + String.format("%.3f", negPeakSubPixelLoc), 250, YCoord);
-      //text("posPeakSubPixelLoc: " + String.format("%.3f", posPeakSubPixelLoc), 325, YCoord);
-      text("Width in Pixels: " + String.format("%.3f", preciseWidthLowPass), XCoord - 450, YCoord);
-      text("Position in Pixels = " + String.format("%.3f", precisePositionLowPass), XCoord - 250, YCoord);
-      text("Width mm: " + String.format("%.5f", preciseWidthMM), XCoord + 75, YCoord);
-      text("Position mm: " + String.format("%.5f", preciseMMPos), XCoord + 250, YCoord);
+      text("negPeakLoc: " + negPeakLoc, 50, YCoord);
+      text("posPeakLoc: " + posPeakLoc, 275, YCoord);
+      text("negSubPixelLoc: " + String.format("%.3f", negPeakSubPixelLoc), 525, YCoord);
+      text("posSubPixelLoc: " + String.format("%.3f", posPeakSubPixelLoc), 725, YCoord);
+      
+      YCoord += 20;
+      
+      text("Width in Pixels: " + String.format("%.3f", preciseWidthLowPass), 50, YCoord);
+      text("Position in Pixels = " + String.format("%.3f", precisePositionLowPass), 275, YCoord);
+      text("Width mm: " + String.format("%.5f", preciseWidthMM), 525, YCoord);
+      text("Position mm: " + String.format("%.5f", preciseMMPos), 725, YCoord);
     }
   }
 }

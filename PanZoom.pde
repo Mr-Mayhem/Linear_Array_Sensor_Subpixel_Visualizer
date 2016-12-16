@@ -35,7 +35,7 @@ public class PanZoomX {
 
   public PanZoomX(PApplet p, float maxPan_X) {
     this.p = p;
-    maxpan_x = maxPan_X;
+    maxpan_x = maxPan_X * 2;
   }
 
   public void mouseDragged() {
