@@ -186,7 +186,7 @@ class dataPlot {
     //drawGrid2(pan_x, (wDataLen * scale_x) + pan_x, 0, height + pan_y, 64 * scale_x, 256 * scale_y);
     
     Legend1.drawLegend();
-    drawKernel(0, scale_x, 0, kernelMultiplier, KG1.sigma);
+    drawKernel(0, scale_x, kernelMultiplier, KG1.sigma);
     
     if (signalSource == 3){         // Plot using Serial Data
       processSerialData();          // from 0 to SENSOR_PIXELS-1              
@@ -204,7 +204,7 @@ class dataPlot {
     50, 50);
   }
   
-  void drawKernel(float pan_x, float scale_x, float pan_y, float scale_y, float sigma){
+  void drawKernel(float pan_x, float scale_x, float scale_y, float sigma){
     
     // plot kernel data point
     stroke(COLOR_KERNEL_DATA);
@@ -215,7 +215,7 @@ class dataPlot {
   
       // draw new kernel point (y scaled up by kernelMultiplier for better visibility)
       point(drawPtrXLessK+HALF_SCREEN_WIDTH, 
-      SCREEN_HEIGHT-kernelDrawYOffset - (kernel[outerPtrX] * scale_y) + pan_y);
+      SCREEN_HEIGHT-kernelDrawYOffset - (kernel[outerPtrX] * scale_y));
      }
      fill(255);
      text("Use mouse wheel here to adjust kernel", HALF_SCREEN_WIDTH-130, (SCREEN_HEIGHT-50));
@@ -243,7 +243,8 @@ class dataPlot {
     
       // shift left by half the kernel size to correct for convolution shift (dead-on correct for odd-size kernels)
       drawPtrXLessK = ((outerCount - HALF_KERNEL_LENGTH) * scale_x) + pan_x; 
- 
+       
+      // same as above, but shift left additional 0.5 to properly place the difference point in-between it's parents
       drawPtrXLessKlessD1 = (((outerCount - HALF_KERNEL_LENGTH) - 0.5) * scale_x) + pan_x;
        
       // parse two pixel data values from the serial port data byte array:
@@ -254,7 +255,7 @@ class dataPlot {
       // plot original data value
       stroke(COLOR_ORIGINAL_DATA);
       
-      point(drawPtrX, HALF_SCREEN_HEIGHT - (input * scale_y) + pan_y);
+      point(drawPtrX, HALF_SCREEN_HEIGHT - (input * scale_y));
       // draw section of greyscale bar showing the 'color' of original data values
       greyscaleBarMapped(drawPtrX, scale_x, 0, input);
 
@@ -304,11 +305,11 @@ class dataPlot {
       // In dsp, this difference is preferably called the 1st difference, 
       // but some call it the 1st derivative or the partial derivative.
       
-      // =================================== End 1st difference ================================================
+      // =================================== End 1st difference ===============================================
   
       // plot the output data value
       stroke(COLOR_OUTPUT_DATA);
-      point(drawPtrXLessK, HALF_SCREEN_HEIGHT - (cOut * scale_y) + pan_y);
+      point(drawPtrXLessK, HALF_SCREEN_HEIGHT - (cOut * scale_y));
       //println("output[" + outerPtrX + "]" +output[outerPtrX]);
      
       // draw section of greyscale bar showing the 'color' of output data values
@@ -316,7 +317,7 @@ class dataPlot {
       
       // plot the first difference data value
       stroke(COLOR_FIRST_DIFFERENCE_OF_OUTPUT);
-      point((drawPtrXLessKlessD1), HALF_SCREEN_HEIGHT - (diff0 * scale_y) + pan_y);
+      point((drawPtrXLessKlessD1), HALF_SCREEN_HEIGHT - (diff0 * scale_y));
       // draw section of greyscale bar showing the 'color' of output2 data values
       //void greyscaleBarMapped(float x, float scale_x, float y, float value) {
       greyscaleBarMappedAbs((drawPtrXLessKlessD1), scale_x, 22, diff0);
@@ -342,8 +343,7 @@ class dataPlot {
       }
     }
   }
-      // copy one data value from the signal generator output array:
-      //input = sigGenOutput[outerPtrX];
+
   void processSignalGeneratorData(){
     
     int outerCount = 0;
@@ -355,7 +355,6 @@ class dataPlot {
       
     // increment the outer loop pointer from wDataStartPos to wDataStopPos - 1
     for (outerPtrX = wDataStartPos; outerPtrX < wDataStopPos; outerPtrX++) {
-    
       outerCount++; // lets us index (x axis) on the screen offset from outerPtrX
       
       // Below we prepare 3 x shift correction indexes to reduce the math work.
@@ -366,6 +365,7 @@ class dataPlot {
       // shift left by half the kernel size to correct for convolution shift (dead-on correct for odd-size kernels)
       drawPtrXLessK = ((outerCount - HALF_KERNEL_LENGTH) * scale_x) + pan_x; 
  
+      // same as above, but shift left additional 0.5 to properly place the difference point in-between it's parents
       drawPtrXLessKlessD1 = (((outerCount - HALF_KERNEL_LENGTH) - 0.5) * scale_x) + pan_x;
        
       // copy one data value from the signal generator output array:
@@ -374,10 +374,10 @@ class dataPlot {
       // plot original data value
       stroke(COLOR_ORIGINAL_DATA);
       
-      point(drawPtrX, HALF_SCREEN_HEIGHT - (input * scale_y) + pan_y);
+      point(drawPtrX, HALF_SCREEN_HEIGHT - (input * scale_y));
       // draw section of greyscale bar showing the 'color' of original data values
       greyscaleBarMapped(drawPtrX, scale_x, 0, input);
-      
+
       // ================================= Convolution Inner Loop  =============================================
       cOutPrev = cOut; // y[output-1] (the previous convolution output value)
       
@@ -424,11 +424,11 @@ class dataPlot {
       // In dsp, this difference is preferably called the 1st difference, 
       // but some call it the 1st derivative or the partial derivative.
       
-      // =================================== End 1st difference ================================================
+      // =================================== End 1st difference ===============================================
   
       // plot the output data value
       stroke(COLOR_OUTPUT_DATA);
-      point(drawPtrXLessK, HALF_SCREEN_HEIGHT - (cOut * scale_y) + pan_y);
+      point(drawPtrXLessK, HALF_SCREEN_HEIGHT - (cOut * scale_y));
       //println("output[" + outerPtrX + "]" +output[outerPtrX]);
      
       // draw section of greyscale bar showing the 'color' of output data values
@@ -436,7 +436,7 @@ class dataPlot {
       
       // plot the first difference data value
       stroke(COLOR_FIRST_DIFFERENCE_OF_OUTPUT);
-      point((drawPtrXLessKlessD1), HALF_SCREEN_HEIGHT - (diff0 * scale_y) + pan_y);
+      point((drawPtrXLessKlessD1), HALF_SCREEN_HEIGHT - (diff0 * scale_y));
       // draw section of greyscale bar showing the 'color' of output2 data values
       //void greyscaleBarMapped(float x, float scale_x, float y, float value) {
       greyscaleBarMappedAbs((drawPtrXLessKlessD1), scale_x, 22, diff0);
@@ -575,15 +575,15 @@ class dataPlot {
 
       // Mark negPeakLoc 3 pixel cluster with one red circle each
       stroke(255, 0, 0);
-      ellipse((float) ((negPeakLoc - shiftSumX - 1) * scale_x) + pan_x, (float) (HALF_SCREEN_HEIGHT - (negPeakLeftPixel * scale_y) + pan_y), markSize, markSize);
-      ellipse((float) ((negPeakLoc - shiftSumX - 0) * scale_x) + pan_x, (float) (HALF_SCREEN_HEIGHT - (negPeakCenterPixel * scale_y) + pan_y), markSize, markSize);
-      ellipse((float) ((negPeakLoc - shiftSumX + 1) * scale_x) + pan_x, (float) (HALF_SCREEN_HEIGHT - (negPeakRightPixel * scale_y) + pan_y), markSize, markSize);
+      ellipse((float) ((negPeakLoc - shiftSumX - 1) * scale_x) + pan_x, (float) (HALF_SCREEN_HEIGHT - (negPeakLeftPixel * scale_y)), markSize, markSize);
+      ellipse((float) ((negPeakLoc - shiftSumX - 0) * scale_x) + pan_x, (float) (HALF_SCREEN_HEIGHT - (negPeakCenterPixel * scale_y)), markSize, markSize);
+      ellipse((float) ((negPeakLoc - shiftSumX + 1) * scale_x) + pan_x, (float) (HALF_SCREEN_HEIGHT - (negPeakRightPixel * scale_y)), markSize, markSize);
 
       // Mark posPeakLoc 3 pixel cluster with one green circle each
       stroke(0, 255, 0);
-      ellipse((float) ((posPeakLoc - shiftSumX - 1) * scale_x) + pan_x, (float) (HALF_SCREEN_HEIGHT - (posPeakLeftPixel * scale_y) + pan_y), markSize, markSize);
-      ellipse((float) ((posPeakLoc - shiftSumX - 0) * scale_x) + pan_x,  (float) (HALF_SCREEN_HEIGHT - (posPeakCenterPixel * scale_y) + pan_y), markSize, markSize);
-      ellipse((float) ((posPeakLoc - shiftSumX + 1) * scale_x) + pan_x,  (float) (HALF_SCREEN_HEIGHT - (posPeakRightPixel * scale_y) + pan_y), markSize, markSize);
+      ellipse((float) ((posPeakLoc - shiftSumX - 1) * scale_x) + pan_x, (float) (HALF_SCREEN_HEIGHT - (posPeakLeftPixel * scale_y)), markSize, markSize);
+      ellipse((float) ((posPeakLoc - shiftSumX - 0) * scale_x) + pan_x,  (float) (HALF_SCREEN_HEIGHT - (posPeakCenterPixel * scale_y)), markSize, markSize);
+      ellipse((float) ((posPeakLoc - shiftSumX + 1) * scale_x) + pan_x,  (float) (HALF_SCREEN_HEIGHT - (posPeakRightPixel * scale_y)), markSize, markSize);
       
       YCoord = SCREEN_HEIGHT - 140;
       fill(255);

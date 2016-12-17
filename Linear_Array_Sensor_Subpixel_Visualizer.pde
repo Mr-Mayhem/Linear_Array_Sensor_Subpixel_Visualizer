@@ -174,7 +174,7 @@ void setup() {
   
   // set framerate() a little above where increases don't speed it up much.
   // Also note, for highest speed, comment out drawing plots you don't care about.
-  frameRate(200); 
+  frameRate(500); 
   
   println("SCREEN_WIDTH: " + SCREEN_WIDTH);
   println("SCREEN_HEIGHT: " + SCREEN_HEIGHT);
