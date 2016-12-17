@@ -253,37 +253,40 @@ class dataPlot {
       // draw section of greyscale bar showing the 'color' of original data values
       greyscaleBarMapped(drawPtrX, scale_x, 0, input);
 
-      // Convolution Inner Loop  =====================================================================
+      // ================================= Convolution Inner Loop  =============================================
       cOutPrev = cOut; // y[output-1] (the previous convolution output value)
+      
       for (innerPtrX = 0; innerPtrX < KERNEL_LENGTH_MINUS1; innerPtrX++) {     // increment the inner loop pointer
         output[innerPtrX] = output[innerPtrX+1] + (input * kernel[innerPtrX]); // convolution: multiply and accumulate
       }
-      output[KERNEL_LENGTH_MINUS1] = input * kernel[KERNEL_LENGTH_MINUS1];     // convolution: multiply only, no accumulate
+      
+      output[KERNEL_LENGTH_MINUS1] = input * kernel[KERNEL_LENGTH_MINUS1]; // convolution: multiply only, no accumulate
+      
       cOut = output[0]; // y[output] (the latest convolution output value)
       
-      // to make this easier to understand, I unwrap the loop below 
-      // try it, it runs, but don't mess with the kernel size via the mouse;
-      // the default kernel sigma 1.4 creates 9 kernel points
-      // also remember to comment out the original convolution code above or you will convolve twice.
+      // To make this convolution inner loop easier to understand, I unwrap the loop below 
+      // Try it, the unwrapped loop code runs fine, but don't mess with the kernel size via the mouse;
+      // (The default kernel sigma 1.4 creates 9 kernel points, which we assume below.)
+      // Remember to comment out the original convolution code above or you will convolve the input data twice.
       // Assuming a 9 point kernel:
       
       //cOutPrev = cOut; // y[output-1] (the previous convolution output value)
       
-      //output[0] = output[1] + (input * kernel[0]); // 1st kernel point
-      //output[1] = output[2] + (input * kernel[1]);
-      //output[2] = output[3] + (input * kernel[2]);
-      //output[3] = output[4] + (input * kernel[3]);
-      //output[4] = output[5] + (input * kernel[4]);
-      //output[5] = output[6] + (input * kernel[5]);
-      //output[6] = output[7] + (input * kernel[6]);
-      //output[7] = output[8] + (input * kernel[7]);
-      //output[8] = input * kernel[8];               // last kernel point convolution: multiply only, no accumulate
+      //output[0] = output[1] + (input * kernel[0]); // 1st kernel point, convolution: multiply and accumulate
+      //output[1] = output[2] + (input * kernel[1]); // 2nd kernel point, convolution: multiply and accumulate
+      //output[2] = output[3] + (input * kernel[2]); // 3rd kernel point, convolution: multiply and accumulate
+      //output[3] = output[4] + (input * kernel[3]); // 4th kernel point, convolution: multiply and accumulate
+      //output[4] = output[5] + (input * kernel[4]); // 5th kernel point, convolution: multiply and accumulate
+      //output[5] = output[6] + (input * kernel[5]); // 6th kernel point, convolution: multiply and accumulate
+      //output[6] = output[7] + (input * kernel[6]); // 7th kernel point, convolution: multiply and accumulate
+      //output[7] = output[8] + (input * kernel[7]); // 8th kernel point, convolution: multiply and accumulate
+      //output[8] = input * kernel[8];               // 9th kernel point, convolution: multiply only, no accumulate
       
-      //cOut = output[0]; // y[output] (the latest convolution output value)
+      //cOut = output[0]; // y[output] (the current convolution output value)
       
-      // End Convolution =============================================================================
+      // ==================================== End Convolution ==================================================
       
-      // 1st differences and the last two values of their recent history =============================
+      // =================== Find the 1st difference and store the last two values  =============================
       // finds the differences and maintains a history of the previous 2 difference values as well,
       // so we can collect all 3 points bracketing a pos or neg peak, needed to feed the subpixel code.
       
@@ -368,30 +371,41 @@ class dataPlot {
       point(drawPtrX, HALF_SCREEN_HEIGHT - (input * scale_y) + pan_y);
       // draw section of greyscale bar showing the 'color' of original data values
       greyscaleBarMapped(drawPtrX, scale_x, 0, input);
-
-      // to make this easier to understand, I unwrap the loop below 
-      // try it, it runs, but don't mess with the kernel size via the mouse;
-      // the default kernel sigma 1.4 creates 9 kernel points
-      // also remember to comment out the original convolution code above or you will convolve twice.
+      
+      // ================================= Convolution Inner Loop  =============================================
+      cOutPrev = cOut; // y[output-1] (the previous convolution output value)
+      
+      for (innerPtrX = 0; innerPtrX < KERNEL_LENGTH_MINUS1; innerPtrX++) {     // increment the inner loop pointer
+        output[innerPtrX] = output[innerPtrX+1] + (input * kernel[innerPtrX]); // convolution: multiply and accumulate
+      }
+      
+      output[KERNEL_LENGTH_MINUS1] = input * kernel[KERNEL_LENGTH_MINUS1]; // convolution: multiply only, no accumulate
+      
+      cOut = output[0]; // y[output] (the latest convolution output value)
+      
+      // To make this convolution inner loop easier to understand, I unwrap the loop below 
+      // Try it, the unwrapped loop code runs fine, but don't mess with the kernel size via the mouse;
+      // (The default kernel sigma 1.4 creates 9 kernel points, which we assume below.)
+      // Remember to comment out the original convolution code above or you will convolve the input data twice.
       // Assuming a 9 point kernel:
       
       //cOutPrev = cOut; // y[output-1] (the previous convolution output value)
       
-      //output[0] = output[1] + (input * kernel[0]); // 1st kernel point
-      //output[1] = output[2] + (input * kernel[1]);
-      //output[2] = output[3] + (input * kernel[2]);
-      //output[3] = output[4] + (input * kernel[3]);
-      //output[4] = output[5] + (input * kernel[4]);
-      //output[5] = output[6] + (input * kernel[5]);
-      //output[6] = output[7] + (input * kernel[6]);
-      //output[7] = output[8] + (input * kernel[7]);
-      //output[8] = input * kernel[8];               // last kernel point convolution: multiply only, no accumulate
+      //output[0] = output[1] + (input * kernel[0]); // 1st kernel point, convolution: multiply and accumulate
+      //output[1] = output[2] + (input * kernel[1]); // 2nd kernel point, convolution: multiply and accumulate
+      //output[2] = output[3] + (input * kernel[2]); // 3rd kernel point, convolution: multiply and accumulate
+      //output[3] = output[4] + (input * kernel[3]); // 4th kernel point, convolution: multiply and accumulate
+      //output[4] = output[5] + (input * kernel[4]); // 5th kernel point, convolution: multiply and accumulate
+      //output[5] = output[6] + (input * kernel[5]); // 6th kernel point, convolution: multiply and accumulate
+      //output[6] = output[7] + (input * kernel[6]); // 7th kernel point, convolution: multiply and accumulate
+      //output[7] = output[8] + (input * kernel[7]); // 8th kernel point, convolution: multiply and accumulate
+      //output[8] = input * kernel[8];               // 9th kernel point, convolution: multiply only, no accumulate
       
-      //cOut = output[0]; // y[output] (the latest convolution output value)
+      //cOut = output[0]; // y[output] (the current convolution output value)
       
-      // End Convolution =============================================================================
+      // ==================================== End Convolution ==================================================
       
-      // 1st differences and the last two values of their recent history =============================
+      // =================== Find the 1st difference and store the last two values  =============================
       // finds the differences and maintains a history of the previous 2 difference values as well,
       // so we can collect all 3 points bracketing a pos or neg peak, needed to feed the subpixel code.
       
