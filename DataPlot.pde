@@ -12,16 +12,15 @@ class dataPlot {
   float cOutPrev;         // the previous convolution output y value
   float cOut;             // the current convolution output y value
   
-  
   float kernelMultiplier; // multiplies the plotted y values of the kernel, for greater visibility since they are small
   int kernelDrawYOffset;  // height above bottom of screen to draw the kernel data points
 
   int wDataStartPos;      // the index of the first data point
   int wDataStopPos;       // the index of the last data point
   
-  int outerPtrX = 0;      // outer loop pointer
   int innerPtrX = 0;      // inner loop pointer for convolution
-  
+  int outerPtrX = 0;      // 1st outer loop pointer
+ 
   float pan_x;            // local copies of variables from PanZoom object
   float scale_x;
   float pan_y;
@@ -31,7 +30,9 @@ class dataPlot {
   float drawPtrX = 0;      // phase correction drawing pointers
   float drawPtrXLessK = 0;
   float drawPtrXLessKlessD1 = 0;
+  
   // =============================================================================================
+  
   // Subpixel Variables
   float negPeakLoc;           // x index position of greatest negative y difference peak found in 1st difference data
   float posPeakLoc;           // x index position of greatest positive y difference peak found in 1st difference data
@@ -63,7 +64,10 @@ class dataPlot {
   double shiftSumX;           // temporary variable for summing x shift values
   double calibrationCoefficient = 0.981; // corrects mm width by multiplying by this value
   
-  float diff0, diff1, diff2;       // temp variables which hold derivative values, used instead of another array
+  float diff0;               // 1st temp variable which holds a difference value for the left side of the 3 values bracketing the d1 peakst
+  float diff1;               // 1st temp variable which holds a difference value for the center of the 3 values bracketing the d1 peak
+  float diff2;               // 1st temp variable which holds a difference value for the right of the 3 values bracketing the d1 peak
+  
   float  XCoord;              // temporary variable for holding a screen X coordinate
   float  YCoord;              // temporary variable for holding a screen Y coordinate
   
@@ -148,10 +152,12 @@ class dataPlot {
   
   void mouseWheel(int step) {
     if (overKernel()){
-        outerPtrX = wDataStopPos;
+        // we are about to changed the kernel size and output array size, so to prevent index errors, 
+        // set the loop pointers to the end of the loop
+        outerPtrX = wDataStopPos;  
         innerPtrX = KERNEL_LENGTH_MINUS1;
-        KG1.mouseWheel(step);
-        output = new float[KERNEL_LENGTH];
+        KG1.mouseWheel(step); // this passes to the kernel generator which makes the new kernel array on the fly
+        output = new float[KERNEL_LENGTH]; // this sizes the output array to match the new kernel array length
     } else if(overPlot()){
       PanZoomPlot.mouseWheel(step);
     }
@@ -228,7 +234,6 @@ class dataPlot {
       
     // increment the outer loop pointer from wDataStartPos to wDataStopPos - 1
     for (outerPtrX = wDataStartPos; outerPtrX < wDataStopPos; outerPtrX++) {
-    
       outerCount++; // lets us index (x axis) on the screen offset from outerPtrX
       
       // Below we prepare 3 x shift correction indexes to reduce the math work.
@@ -241,7 +246,7 @@ class dataPlot {
  
       drawPtrXLessKlessD1 = (((outerCount - HALF_KERNEL_LENGTH) - 0.5) * scale_x) + pan_x;
        
-      // parse one pixel data value from the serial port data byte array:
+      // parse two pixel data values from the serial port data byte array:
       // Read a pair of bytes from the byte array, convert them into an integer, 
       // shift right 2 places(divide by 4), and copy the value to a simple global variable
       input = (byteArray[outerPtrX<<1]<< 8 | (byteArray[(outerPtrX<<1) + 1] & 0xFF))>>2;
@@ -256,11 +261,11 @@ class dataPlot {
       // ================================= Convolution Inner Loop  =============================================
       cOutPrev = cOut; // y[output-1] (the previous convolution output value)
       
-      for (innerPtrX = 0; innerPtrX < KERNEL_LENGTH_MINUS1; innerPtrX++) {     // increment the inner loop pointer
-        output[innerPtrX] = output[innerPtrX+1] + (input * kernel[innerPtrX]); // convolution: multiply and accumulate
+      for (innerPtrX = 0; innerPtrX < KERNEL_LENGTH_MINUS1; innerPtrX++) {      // increment the inner loop pointer
+        output[innerPtrX] = output[innerPtrX+1] + (input * kernel[innerPtrX]);  // convolution: multiply and accumulate
       }
       
-      output[KERNEL_LENGTH_MINUS1] = input * kernel[KERNEL_LENGTH_MINUS1]; // convolution: multiply only, no accumulate
+      output[KERNEL_LENGTH_MINUS1] = input * kernel[KERNEL_LENGTH_MINUS1];      // convolution: multiply only, no accumulate
       
       cOut = output[0]; // y[output] (the latest convolution output value)
       
@@ -287,7 +292,7 @@ class dataPlot {
       
       // ==================================== End Convolution ==================================================
       
-      // =================== Find the 1st difference and store the last two values  =============================
+      // =================== Find the 1st difference and store the last two values  ============================
       // finds the differences and maintains a history of the previous 2 difference values as well,
       // so we can collect all 3 points bracketing a pos or neg peak, needed to feed the subpixel code.
       
@@ -299,7 +304,7 @@ class dataPlot {
       // In dsp, this difference is preferably called the 1st difference, 
       // but some call it the 1st derivative or the partial derivative.
       
-      // =============================================================================================
+      // =================================== End 1st difference ================================================
   
       // plot the output data value
       stroke(COLOR_OUTPUT_DATA);
@@ -376,11 +381,11 @@ class dataPlot {
       // ================================= Convolution Inner Loop  =============================================
       cOutPrev = cOut; // y[output-1] (the previous convolution output value)
       
-      for (innerPtrX = 0; innerPtrX < KERNEL_LENGTH_MINUS1; innerPtrX++) {     // increment the inner loop pointer
-        output[innerPtrX] = output[innerPtrX+1] + (input * kernel[innerPtrX]); // convolution: multiply and accumulate
+      for (innerPtrX = 0; innerPtrX < KERNEL_LENGTH_MINUS1; innerPtrX++) {      // increment the inner loop pointer
+        output[innerPtrX] = output[innerPtrX+1] + (input * kernel[innerPtrX]);  // convolution: multiply and accumulate
       }
       
-      output[KERNEL_LENGTH_MINUS1] = input * kernel[KERNEL_LENGTH_MINUS1]; // convolution: multiply only, no accumulate
+      output[KERNEL_LENGTH_MINUS1] = input * kernel[KERNEL_LENGTH_MINUS1];      // convolution: multiply only, no accumulate
       
       cOut = output[0]; // y[output] (the latest convolution output value)
       
@@ -391,7 +396,7 @@ class dataPlot {
       // Assuming a 9 point kernel:
       
       //cOutPrev = cOut; // y[output-1] (the previous convolution output value)
-      
+
       //output[0] = output[1] + (input * kernel[0]); // 1st kernel point, convolution: multiply and accumulate
       //output[1] = output[2] + (input * kernel[1]); // 2nd kernel point, convolution: multiply and accumulate
       //output[2] = output[3] + (input * kernel[2]); // 3rd kernel point, convolution: multiply and accumulate
@@ -400,14 +405,14 @@ class dataPlot {
       //output[5] = output[6] + (input * kernel[5]); // 6th kernel point, convolution: multiply and accumulate
       //output[6] = output[7] + (input * kernel[6]); // 7th kernel point, convolution: multiply and accumulate
       //output[7] = output[8] + (input * kernel[7]); // 8th kernel point, convolution: multiply and accumulate
-      
+
       //output[8] = input * kernel[8];               // 9th kernel point, convolution: multiply only, no accumulate
       
       //cOut = output[0]; // y[output] (the current convolution output value)
       
       // ==================================== End Convolution ==================================================
       
-      // =================== Find the 1st difference and store the last two values  =============================
+      // =================== Find the 1st difference and store the last two values  ============================
       // finds the differences and maintains a history of the previous 2 difference values as well,
       // so we can collect all 3 points bracketing a pos or neg peak, needed to feed the subpixel code.
       
@@ -419,7 +424,7 @@ class dataPlot {
       // In dsp, this difference is preferably called the 1st difference, 
       // but some call it the 1st derivative or the partial derivative.
       
-      // =============================================================================================
+      // =================================== End 1st difference ================================================
   
       // plot the output data value
       stroke(COLOR_OUTPUT_DATA);
