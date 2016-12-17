@@ -271,7 +271,8 @@ class dataPlot {
       cOut = output[0]; // y[output] (the latest convolution output value)
       
       // To make this convolution inner loop easier to understand, I unwrap the loop below 
-      // Try it, the unwrapped loop code runs fine, but don't mess with the kernel size via the mouse;
+      // The unwrapped loop code below runs ok, but don't mess with the kernel size via the mouse.
+      // You can replace the loop code above with the unwrapped loop code below if the kernel length is fixed.
       // (The default kernel sigma 1.4 creates 9 kernel points, which we assume below.)
       // Remember to comment out the original convolution code above or you will convolve the input data twice.
       // Assuming a 9 point kernel:
@@ -390,7 +391,8 @@ class dataPlot {
       cOut = output[0]; // y[output] (the latest convolution output value)
       
       // To make this convolution inner loop easier to understand, I unwrap the loop below 
-      // Try it, the unwrapped loop code runs fine, but don't mess with the kernel size via the mouse;
+      // The unwrapped loop code below runs ok, but don't mess with the kernel size via the mouse.
+      // You can replace the loop code above with the unwrapped loop code below if the kernel length is fixed.
       // (The default kernel sigma 1.4 creates 9 kernel points, which we assume below.)
       // Remember to comment out the original convolution code above or you will convolve the input data twice.
       // Assuming a 9 point kernel:
