@@ -145,12 +145,13 @@ void setup() {
   HALF_SCREEN_HEIGHT = SCREEN_HEIGHT / 2;
   
   // ============================================================================================
-  kernelSource = 0; // <<< <<< Choose a kernel source 0 = dynamically created gaussian:
+  kernelSource = 0; // <<< <<< Choose a kernel source (0 = dynamically created gaussian):
   // Create a kernelGenerator object, which creates a kernel and saves it's data into an array
+  // currently supports only kernelSource = 0 (dynamically created gaussian)
   KG1 = new KernelGenerator();
   KG1.setKernelSource(kernelSource);
   // ============================================================================================
-  signalSource = 0;  // <<< <<< Choose a signal source, 0 = raw data, 1 square pulse, 2 square wave, 3 serial data:
+  signalSource = 3;  // <<< <<< Choose a signal source, 0 = raw data, 1 square pulse, 2 square wave, 3 serial data:
   // You are encouraged to try different signal sources, to see how the subpixel code behaves with 
   // nearly perfect waveforms
   // =============================================================================================
