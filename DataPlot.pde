@@ -69,12 +69,14 @@ class dataPlot {
   
   int markSize;               // diameter of drawn subpixel marker circles
   int subpixelMarkerLen;      // length of vertical lines which indicate subpixel peaks and shadow center location
+  
   // =============================================================================================
   //Arrays
   
   float[] output = new float[0];       // array for output signal
   
   // =============================================================================================
+  
   Legend Legend1;            // One Legend object, lists the colors and what they represent
   Grid Grid1;                // One Grid object, draws a grid
   PanZoomX PanZoomPlot;      // pan/zoom object to control pan & zoom of main data plot
@@ -239,7 +241,6 @@ class dataPlot {
  
       drawPtrXLessKlessD1 = (((outerCount - HALF_KERNEL_LENGTH) - 0.5) * scale_x) + pan_x;
        
-       
       // parse one pixel data value from the serial port data byte array:
       // Read a pair of bytes from the byte array, convert them into an integer, 
       // shift right 2 places(divide by 4), and copy result to 'in'
@@ -251,21 +252,31 @@ class dataPlot {
       point(drawPtrX, HALF_SCREEN_HEIGHT - (input * scale_y) + pan_y);
       // draw section of greyscale bar showing the 'color' of original data values
       greyscaleBarMapped(drawPtrX, scale_x, 0, input);
+
+      // convolution inner loop  =====================================================================
       
-      // convolution inner loop
       cOutPrev = cOut; // y[output-1]
       for (innerPtrX = 0; innerPtrX < KERNEL_LENGTH_MINUS1; innerPtrX++) { // increment the inner loop pointer
         output[innerPtrX] = output[innerPtrX+1] + input * kernel[innerPtrX];  // convolve: multiply and accumulate
       }
       output[KERNEL_LENGTH_MINUS1] = input * kernel[KERNEL_LENGTH_MINUS1];
       cOut = output[0]; // y[output]
+      // end convolution =============================================================================
       
-      diff2=diff1;      // (left of peak)
-      diff1=diff0;      // (center peak y value)  
+      // 1st differences and the last two values of their recent history =============================
+      // finds the differences and maintains a history of the previous 2 difference values as well,
+      // so we can collect all 3 points bracketing a pos or neg peak, needed to feed the subpixel code.
+      
+      diff2=diff1;      // (left y value)
+      diff1=diff0;      // (center y value)  
       // find 1st difference of the convolved data, the difference between adjacent points in the smoothed data.
-      diff0 = cOut - cOutPrev; // (right of peak) y[x] - y[x-1], in dsp preferably called the 1st difference.
-      // difference between the current smoothed y value and the previous one
+      diff0 = cOut - cOutPrev; // (right y value) // difference between the current convolution output value 
+      // and the previous one, in the form y[x] - y[x-1]
+      // In dsp, this difference is preferably called the 1st difference, 
+      // but some call it the 1st derivative or the partial derivative.
       
+      // =============================================================================================
+  
       // plot the output data value
       stroke(COLOR_OUTPUT_DATA);
       point(drawPtrXLessK, HALF_SCREEN_HEIGHT - (cOut * scale_y) + pan_y);
@@ -302,7 +313,8 @@ class dataPlot {
       }
     }
   }
-
+      // copy one data value from the signal generator output array:
+      //input = sigGenOutput[outerPtrX];
   void processSignalGeneratorData(){
     
     int outerCount = 0;
@@ -327,7 +339,6 @@ class dataPlot {
  
       drawPtrXLessKlessD1 = (((outerCount - HALF_KERNEL_LENGTH) - 0.5) * scale_x) + pan_x;
        
-       
       // copy one data value from the signal generator output array:
       input = sigGenOutput[outerPtrX];
       
@@ -337,21 +348,31 @@ class dataPlot {
       point(drawPtrX, HALF_SCREEN_HEIGHT - (input * scale_y) + pan_y);
       // draw section of greyscale bar showing the 'color' of original data values
       greyscaleBarMapped(drawPtrX, scale_x, 0, input);
+
+      // convolution inner loop  =====================================================================
       
-      // convolution inner loop
       cOutPrev = cOut; // y[output-1]
       for (innerPtrX = 0; innerPtrX < KERNEL_LENGTH_MINUS1; innerPtrX++) { // increment the inner loop pointer
         output[innerPtrX] = output[innerPtrX+1] + input * kernel[innerPtrX];  // convolve: multiply and accumulate
       }
       output[KERNEL_LENGTH_MINUS1] = input * kernel[KERNEL_LENGTH_MINUS1];
       cOut = output[0]; // y[output]
+      // end convolution =============================================================================
       
-      diff2=diff1;      // (left of peak)
-      diff1=diff0;      // (center peak y value)  
+      // 1st differences and the last two values of their recent history =============================
+      // finds the differences and maintains a history of the previous 2 difference values as well,
+      // so we can collect all 3 points bracketing a pos or neg peak, needed to feed the subpixel code.
+      
+      diff2=diff1;      // (left y value)
+      diff1=diff0;      // (center y value)  
       // find 1st difference of the convolved data, the difference between adjacent points in the smoothed data.
-      diff0 = cOut - cOutPrev; // (right of peak) y[x] - y[x-1], in dsp preferably called the 1st difference.
-      // difference between the current smoothed y value and the previous one
+      diff0 = cOut - cOutPrev; // (right y value) // difference between the current convolution output value 
+      // and the previous one, in the form y[x] - y[x-1]
+      // In dsp, this difference is preferably called the 1st difference, 
+      // but some call it the 1st derivative or the partial derivative.
       
+      // =============================================================================================
+  
       // plot the output data value
       stroke(COLOR_OUTPUT_DATA);
       point(drawPtrXLessK, HALF_SCREEN_HEIGHT - (cOut * scale_y) + pan_y);
@@ -514,17 +535,17 @@ class dataPlot {
       YCoord = SCREEN_HEIGHT - 140;
       fill(255);
       textSize(14);
-      text("negPeakLoc: " + negPeakLoc, HALF_SCREEN_WIDTH - 450, YCoord);
-      text("posPeakLoc: " + posPeakLoc, HALF_SCREEN_WIDTH - 250, YCoord);
-      text("negSubPixelLoc: " + String.format("%.3f", negPeakSubPixelLoc), HALF_SCREEN_WIDTH + 50, YCoord);
-      text("posSubPixelLoc: " + String.format("%.3f", posPeakSubPixelLoc), HALF_SCREEN_WIDTH + 275, YCoord);
+      text("neg Peak Location: " + negPeakLoc, HALF_SCREEN_WIDTH - 500, YCoord);
+      text("pos Peak Location: " + posPeakLoc, HALF_SCREEN_WIDTH - 300, YCoord);
+      text("neg SubPixel Location: " + String.format("%.3f", negPeakSubPixelLoc), HALF_SCREEN_WIDTH + 50, YCoord);
+      text("pos SubPixel Location: " + String.format("%.3f", posPeakSubPixelLoc), HALF_SCREEN_WIDTH + 325, YCoord);
       
       YCoord += 20;
       
-      text("Width in Pixels: " + String.format("%.3f", preciseWidthLowPass), HALF_SCREEN_WIDTH -450, YCoord);
-      text("Position in Pixels = " + String.format("%.3f", precisePositionLowPass), HALF_SCREEN_WIDTH - 250, YCoord);
-      text("Width mm: " + String.format("%.5f", preciseWidthMM), HALF_SCREEN_WIDTH + 50, YCoord);
-      text("Position mm: " + String.format("%.5f", preciseMMPos), HALF_SCREEN_WIDTH + 275, YCoord);
+      text("Subpixel Width: " + String.format("%.3f", preciseWidthLowPass), HALF_SCREEN_WIDTH -500, YCoord);
+      text("Subpixel Center Position = " + String.format("%.3f", precisePositionLowPass), HALF_SCREEN_WIDTH - 300, YCoord);
+      text("Width in mm: " + String.format("%.5f", preciseWidthMM), HALF_SCREEN_WIDTH + 50, YCoord);
+      text("Position in mm: " + String.format("%.5f", preciseMMPos), HALF_SCREEN_WIDTH + 325, YCoord);
     }
   }
 }
