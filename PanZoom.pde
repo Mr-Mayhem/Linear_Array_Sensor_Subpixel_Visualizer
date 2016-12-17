@@ -1,6 +1,12 @@
 /**
- * Pan-Zoom Controller.
- * 
+ * Pan-Zoom Controller, modified by Douglas Mayhew November 20, 2016.
+ * We do not use Processing's built-in translate() methods to apply 
+ * translations, because we don't want to hide that functionality 
+ * from the experimenter, and because we want to use values from 
+ * this PanZoom object to enable us to ignore working on
+ * data that would not appear in the display window anyway.
+ 
+ * Pan-Zoom Controller,
  * Allows to move and scale a drawing using mouse and keyboard. Mouse wheel
  * changes the scale, mouse drag or keyboard arrows change the panning
  * (movement).

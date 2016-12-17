@@ -152,10 +152,10 @@ class dataPlot {
   
   void mouseWheel(int step) {
     if (overKernel()){
-        // we are about to changed the kernel size and output array size, so to prevent index errors, 
-        // set the loop pointers to the end of the loop
-        outerPtrX = wDataStopPos;  
-        innerPtrX = KERNEL_LENGTH_MINUS1;
+        // we may change the kernel size and output array size, so to prevent array index errors, 
+        // set the loop pointers to the last value each loop would normally reach during normal operation
+        outerPtrX = wDataStopPos-1;  
+        innerPtrX = KERNEL_LENGTH_MINUS1-1;
         KG1.mouseWheel(step); // this passes to the kernel generator which makes the new kernel array on the fly
         output = new float[KERNEL_LENGTH]; // this sizes the output array to match the new kernel array length
     } else if(overPlot()){

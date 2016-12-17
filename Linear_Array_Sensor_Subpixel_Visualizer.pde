@@ -191,8 +191,10 @@ void setup() {
 
 void serialEvent(Serial p) { 
   // copy one complete sensor frame of data, plus the prefix byte, into byteArray[]
+  // only enabled when signalSource is set to 3 (serial data), see above.
   bytesRead = p.readBytes(byteArray);
-  redraw();
+  redraw(); // fires the draw() function below. In cases where signalSource is not 3 (Serial Data), 
+  // draw() fires automatically because we do not call noLoop()
 }
   
 void draw() {
@@ -211,10 +213,10 @@ void draw() {
   background(0);
   fill(255);
   
-  // Counts 1 to 60 and repeats
+  // Counts 1 to 60 and repeats, to provide a sense of the frame rate
   text(chartRedraws, 10, 50); //<>//
 
-  // Plot the Data
+  // Plot the Data using the DataPlot object
    DP1.display();
 }
 

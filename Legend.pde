@@ -31,7 +31,7 @@ class Legend {
     fill(255);
     text("Convolution kernel", rectX + 20, rectY + 10);
     
-     rectY += 20;
+    rectY += 20;
     stroke(COLOR_OUTPUT_DATA);
     fill(COLOR_OUTPUT_DATA);
     rect(rectX, rectY, rectWidth, rectHeight);
