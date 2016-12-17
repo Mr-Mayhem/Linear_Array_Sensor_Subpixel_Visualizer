@@ -262,10 +262,13 @@ class dataPlot {
       cOut = output[0]; // y[output] (the latest convolution output value)
       
       // to make this easier to understand, I unwrap the loop below 
-      // try it, it runs, but don't mess with the kernel size via the mouse; default kernel sigma 1.4 creates 9 kernel points
+      // try it, it runs, but don't mess with the kernel size via the mouse;
+      // the default kernel sigma 1.4 creates 9 kernel points
       // also remember to comment out the original convolution code above or you will convolve twice.
       // Assuming a 9 point kernel:
+      
       //cOutPrev = cOut; // y[output-1] (the previous convolution output value)
+      
       //output[0] = output[1] + (input * kernel[0]); // 1st kernel point
       //output[1] = output[2] + (input * kernel[1]);
       //output[2] = output[3] + (input * kernel[2]);
@@ -275,7 +278,9 @@ class dataPlot {
       //output[6] = output[7] + (input * kernel[6]);
       //output[7] = output[8] + (input * kernel[7]);
       //output[8] = input * kernel[8];               // last kernel point convolution: multiply only, no accumulate
-      //cOut = output[0];                            // y[output] (the latest convolution output value)
+      
+      //cOut = output[0]; // y[output] (the latest convolution output value)
+      
       // End Convolution =============================================================================
       
       // 1st differences and the last two values of their recent history =============================
@@ -364,19 +369,14 @@ class dataPlot {
       // draw section of greyscale bar showing the 'color' of original data values
       greyscaleBarMapped(drawPtrX, scale_x, 0, input);
 
-      // Convolution Inner Loop  =====================================================================
-      cOutPrev = cOut; // y[output-1] (the previous convolution output value)
-      for (innerPtrX = 0; innerPtrX < KERNEL_LENGTH_MINUS1; innerPtrX++) {     // increment the inner loop pointer
-        output[innerPtrX] = output[innerPtrX+1] + (input * kernel[innerPtrX]); // convolution: multiply and accumulate
-      }
-      output[KERNEL_LENGTH_MINUS1] = input * kernel[KERNEL_LENGTH_MINUS1];     // convolution: multiply only, no accumulate
-      cOut = output[0]; // y[output] (the latest convolution output value)
-      
       // to make this easier to understand, I unwrap the loop below 
-      // try it, it runs, but don't mess with the kernel size via the mouse; default kernel sigma 1.4 creates 9 kernel points
+      // try it, it runs, but don't mess with the kernel size via the mouse;
+      // the default kernel sigma 1.4 creates 9 kernel points
       // also remember to comment out the original convolution code above or you will convolve twice.
       // Assuming a 9 point kernel:
+      
       //cOutPrev = cOut; // y[output-1] (the previous convolution output value)
+      
       //output[0] = output[1] + (input * kernel[0]); // 1st kernel point
       //output[1] = output[2] + (input * kernel[1]);
       //output[2] = output[3] + (input * kernel[2]);
@@ -386,7 +386,9 @@ class dataPlot {
       //output[6] = output[7] + (input * kernel[6]);
       //output[7] = output[8] + (input * kernel[7]);
       //output[8] = input * kernel[8];               // last kernel point convolution: multiply only, no accumulate
-      //cOut = output[0];                            // y[output] (the latest convolution output value)
+      
+      //cOut = output[0]; // y[output] (the latest convolution output value)
+      
       // End Convolution =============================================================================
       
       // 1st differences and the last two values of their recent history =============================
