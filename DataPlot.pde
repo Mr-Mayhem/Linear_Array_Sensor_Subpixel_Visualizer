@@ -271,7 +271,7 @@ class dataPlot {
       // Assuming a 9 point kernel:
       
       //cOutPrev = cOut; // y[output-1] (the previous convolution output value)
-      
+
       //output[0] = output[1] + (input * kernel[0]); // 1st kernel point, convolution: multiply and accumulate
       //output[1] = output[2] + (input * kernel[1]); // 2nd kernel point, convolution: multiply and accumulate
       //output[2] = output[3] + (input * kernel[2]); // 3rd kernel point, convolution: multiply and accumulate
@@ -280,6 +280,7 @@ class dataPlot {
       //output[5] = output[6] + (input * kernel[5]); // 6th kernel point, convolution: multiply and accumulate
       //output[6] = output[7] + (input * kernel[6]); // 7th kernel point, convolution: multiply and accumulate
       //output[7] = output[8] + (input * kernel[7]); // 8th kernel point, convolution: multiply and accumulate
+
       //output[8] = input * kernel[8];               // 9th kernel point, convolution: multiply only, no accumulate
       
       //cOut = output[0]; // y[output] (the current convolution output value)
@@ -399,6 +400,7 @@ class dataPlot {
       //output[5] = output[6] + (input * kernel[5]); // 6th kernel point, convolution: multiply and accumulate
       //output[6] = output[7] + (input * kernel[6]); // 7th kernel point, convolution: multiply and accumulate
       //output[7] = output[8] + (input * kernel[7]); // 8th kernel point, convolution: multiply and accumulate
+      
       //output[8] = input * kernel[8];               // 9th kernel point, convolution: multiply only, no accumulate
       
       //cOut = output[0]; // y[output] (the current convolution output value)
