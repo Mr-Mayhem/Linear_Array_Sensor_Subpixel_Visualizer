@@ -253,14 +253,12 @@ class dataPlot {
       // draw section of greyscale bar showing the 'color' of original data values
       greyscaleBarMapped(drawPtrX, scale_x, 0, input);
 
-      // convolution inner loop  =====================================================================
-      
+      // Convolution Inner Loop  =====================================================================
       cOutPrev = cOut; // y[output-1] (the previous convolution output value)
-      for (innerPtrX = 0; innerPtrX < KERNEL_LENGTH_MINUS1; innerPtrX++) {   // increment the inner loop pointer
-        // convolution: multiply and accumulate
-        output[innerPtrX] = output[innerPtrX+1] + (input * kernel[innerPtrX]); 
+      for (innerPtrX = 0; innerPtrX < KERNEL_LENGTH_MINUS1; innerPtrX++) {     // increment the inner loop pointer
+        output[innerPtrX] = output[innerPtrX+1] + (input * kernel[innerPtrX]); // convolution: multiply and accumulate
       }
-      output[KERNEL_LENGTH_MINUS1] = input * kernel[KERNEL_LENGTH_MINUS1];   // convolution: multiply only, no accumulate
+      output[KERNEL_LENGTH_MINUS1] = input * kernel[KERNEL_LENGTH_MINUS1];     // convolution: multiply only, no accumulate
       cOut = output[0]; // y[output] (the latest convolution output value)
       
       // to make this easier to understand, I unwrap the loop below 
@@ -278,7 +276,7 @@ class dataPlot {
       //output[7] = output[8] + (input * kernel[7]);
       //output[8] = input * kernel[8];               // last kernel point convolution: multiply only, no accumulate
       //cOut = output[0];                            // y[output] (the latest convolution output value)
-      // end convolution =============================================================================
+      // End Convolution =============================================================================
       
       // 1st differences and the last two values of their recent history =============================
       // finds the differences and maintains a history of the previous 2 difference values as well,
@@ -366,14 +364,12 @@ class dataPlot {
       // draw section of greyscale bar showing the 'color' of original data values
       greyscaleBarMapped(drawPtrX, scale_x, 0, input);
 
-      // convolution inner loop  =====================================================================
-      
+      // Convolution Inner Loop  =====================================================================
       cOutPrev = cOut; // y[output-1] (the previous convolution output value)
-      for (innerPtrX = 0; innerPtrX < KERNEL_LENGTH_MINUS1; innerPtrX++) {   // increment the inner loop pointer
-        // convolution: multiply and accumulate
-        output[innerPtrX] = output[innerPtrX+1] + (input * kernel[innerPtrX]); 
+      for (innerPtrX = 0; innerPtrX < KERNEL_LENGTH_MINUS1; innerPtrX++) {     // increment the inner loop pointer
+        output[innerPtrX] = output[innerPtrX+1] + (input * kernel[innerPtrX]); // convolution: multiply and accumulate
       }
-      output[KERNEL_LENGTH_MINUS1] = input * kernel[KERNEL_LENGTH_MINUS1];   // convolution: multiply only, no accumulate
+      output[KERNEL_LENGTH_MINUS1] = input * kernel[KERNEL_LENGTH_MINUS1];     // convolution: multiply only, no accumulate
       cOut = output[0]; // y[output] (the latest convolution output value)
       
       // to make this easier to understand, I unwrap the loop below 
@@ -391,7 +387,7 @@ class dataPlot {
       //output[7] = output[8] + (input * kernel[7]);
       //output[8] = input * kernel[8];               // last kernel point convolution: multiply only, no accumulate
       //cOut = output[0];                            // y[output] (the latest convolution output value)
-      // end convolution =============================================================================
+      // End Convolution =============================================================================
       
       // 1st differences and the last two values of their recent history =============================
       // finds the differences and maintains a history of the previous 2 difference values as well,
