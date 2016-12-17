@@ -243,7 +243,7 @@ class dataPlot {
        
       // parse one pixel data value from the serial port data byte array:
       // Read a pair of bytes from the byte array, convert them into an integer, 
-      // shift right 2 places(divide by 4), and copy result to 'in'
+      // shift right 2 places(divide by 4), and copy the value to a simple global variable
       input = (byteArray[outerPtrX<<1]<< 8 | (byteArray[(outerPtrX<<1) + 1] & 0xFF))>>2;
       
       // plot original data value
@@ -255,12 +255,29 @@ class dataPlot {
 
       // convolution inner loop  =====================================================================
       
-      cOutPrev = cOut; // y[output-1]
-      for (innerPtrX = 0; innerPtrX < KERNEL_LENGTH_MINUS1; innerPtrX++) { // increment the inner loop pointer
-        output[innerPtrX] = output[innerPtrX+1] + input * kernel[innerPtrX];  // convolve: multiply and accumulate
+      cOutPrev = cOut; // y[output-1] (the previous convolution output value)
+      for (innerPtrX = 0; innerPtrX < KERNEL_LENGTH_MINUS1; innerPtrX++) {   // increment the inner loop pointer
+        // convolution: multiply and accumulate
+        output[innerPtrX] = output[innerPtrX+1] + (input * kernel[innerPtrX]); 
       }
-      output[KERNEL_LENGTH_MINUS1] = input * kernel[KERNEL_LENGTH_MINUS1];
-      cOut = output[0]; // y[output]
+      output[KERNEL_LENGTH_MINUS1] = input * kernel[KERNEL_LENGTH_MINUS1];   // convolution: multiply only, no accumulate
+      cOut = output[0]; // y[output] (the latest convolution output value)
+      
+      // to make this easier to understand, I unwrap the loop below 
+      // try it, it runs, but don't mess with the kernel size via the mouse; default kernel sigma 1.4 creates 9 kernel points
+      // also remember to comment out the original convolution code above or you will convolve twice.
+      // Assuming a 9 point kernel:
+      //cOutPrev = cOut; // y[output-1] (the previous convolution output value)
+      //output[0] = output[1] + (input * kernel[0]); // 1st kernel point
+      //output[1] = output[2] + (input * kernel[1]);
+      //output[2] = output[3] + (input * kernel[2]);
+      //output[3] = output[4] + (input * kernel[3]);
+      //output[4] = output[5] + (input * kernel[4]);
+      //output[5] = output[6] + (input * kernel[5]);
+      //output[6] = output[7] + (input * kernel[6]);
+      //output[7] = output[8] + (input * kernel[7]);
+      //output[8] = input * kernel[8];               // last kernel point convolution: multiply only, no accumulate
+      //cOut = output[0];                            // y[output] (the latest convolution output value)
       // end convolution =============================================================================
       
       // 1st differences and the last two values of their recent history =============================
@@ -351,12 +368,29 @@ class dataPlot {
 
       // convolution inner loop  =====================================================================
       
-      cOutPrev = cOut; // y[output-1]
-      for (innerPtrX = 0; innerPtrX < KERNEL_LENGTH_MINUS1; innerPtrX++) { // increment the inner loop pointer
-        output[innerPtrX] = output[innerPtrX+1] + input * kernel[innerPtrX];  // convolve: multiply and accumulate
+      cOutPrev = cOut; // y[output-1] (the previous convolution output value)
+      for (innerPtrX = 0; innerPtrX < KERNEL_LENGTH_MINUS1; innerPtrX++) {   // increment the inner loop pointer
+        // convolution: multiply and accumulate
+        output[innerPtrX] = output[innerPtrX+1] + (input * kernel[innerPtrX]); 
       }
-      output[KERNEL_LENGTH_MINUS1] = input * kernel[KERNEL_LENGTH_MINUS1];
-      cOut = output[0]; // y[output]
+      output[KERNEL_LENGTH_MINUS1] = input * kernel[KERNEL_LENGTH_MINUS1];   // convolution: multiply only, no accumulate
+      cOut = output[0]; // y[output] (the latest convolution output value)
+      
+      // to make this easier to understand, I unwrap the loop below 
+      // try it, it runs, but don't mess with the kernel size via the mouse; default kernel sigma 1.4 creates 9 kernel points
+      // also remember to comment out the original convolution code above or you will convolve twice.
+      // Assuming a 9 point kernel:
+      //cOutPrev = cOut; // y[output-1] (the previous convolution output value)
+      //output[0] = output[1] + (input * kernel[0]); // 1st kernel point
+      //output[1] = output[2] + (input * kernel[1]);
+      //output[2] = output[3] + (input * kernel[2]);
+      //output[3] = output[4] + (input * kernel[3]);
+      //output[4] = output[5] + (input * kernel[4]);
+      //output[5] = output[6] + (input * kernel[5]);
+      //output[6] = output[7] + (input * kernel[6]);
+      //output[7] = output[8] + (input * kernel[7]);
+      //output[8] = input * kernel[8];               // last kernel point convolution: multiply only, no accumulate
+      //cOut = output[0];                            // y[output] (the latest convolution output value)
       // end convolution =============================================================================
       
       // 1st differences and the last two values of their recent history =============================
