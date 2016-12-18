@@ -1,28 +1,28 @@
-/*
+/* //<>// //<>//
 Linear_Array_Sensor_Subpixel_Visualizer.pde, a demo of subpixel resolution shadow position measurement and visualization,
-using a TSL1402R or TSL1410R linear photodiode array via serial port, or synthesized waveforms.
-
-Created by Douglas Mayhew, November 20, 2016.
-Released into the public domain, except:
+ using a TSL1402R or TSL1410R linear photodiode array via serial port, or synthesized waveforms.
+ 
+ Created by Douglas Mayhew, November 20, 2016.
+ Released into the public domain, except:
  * The function, 'makeGaussKernel1d' is made available as part of the book 
  * "Digital Image * Processing - An Algorithmic Introduction using Java" by Wilhelm Burger
  * and Mark J. Burge, Copyright (C) 2005-2008 Springer-Verlag Berlin, Heidelberg, New York.
  * Note that this code comes with absolutely no warranty of any kind.
  * See http://www.imagingbook.com for details and licensing conditions. 
-
-See: https://github.com/Mr-Mayhem/DSP_Snippets_For_Processing
-
+ 
+ See: https://github.com/Mr-Mayhem/DSP_Snippets_For_Processing
+ 
  * PanZoomController
  * @author Bohumir Zamecnik, modified by Doug Mayhew Dec 7, 2016
  * @license MIT
  * 
  * Inspired by "Pan And Zoom" by Dan Thompson, licensed under Creative Commons
-
+ 
  For more info on 3 point quadratic interpolation, see the subpixel edge finding method described in F. Devernay,
  A Non-Maxima Suppression Method for Edge Detection with Sub-Pixel Accuracy
  RR 2724, INRIA, nov. 1995
  http://dev.ipol.im/~morel/Dossier_MVA_2011_Cours_Transparents_Documents/2011_Cours1_Document1_1995-devernay--a-non-maxima-suppression-method-for-edge-detection-with-sub-pixel-accuracy.pdf
-
+ 
  quadratic interpolation subpixel code is my rework of many 'remixes' of the 
  Filament Width Sensor Prototype by flipper, as well as my own ideas to show the inner workings via graphics.
  I also added center position code, as all the filament width sensor projects seemed to only output the width 
@@ -34,7 +34,7 @@ See: https://github.com/Mr-Mayhem/DSP_Snippets_For_Processing
  Another example filament width sensor with quadratic interpolation subpixel code is the "Zabe Width Sensor"
  see Filament Width Sensor - TSL1402R + Arduino Mega (Work-in-progress):
  https://www.thingiverse.com/thing:668377
-
+ 
  This sketch is able to run the subpixel position code against various data sources. 
  The sketch can synthesize test data like square impulses, to verify that the output is 
  doing what it should, but this sketch is mainly concerned with displaying and measuring 
@@ -62,13 +62,13 @@ See: https://github.com/Mr-Mayhem/DSP_Snippets_For_Processing
  2. Send a windowed section containing only the interesting data, rather than all the data.
  3. Auto-Calibration using drill bits, dowel pins, etc.
  4. Multiple angles of led lights shining on the target, so multiple exposures may be compared 
-    for additional subpixel accuracy, or a faster solution - multiple slits casting shadows 
-    and averaging the shadow subpixel positions.
+ for additional subpixel accuracy, or a faster solution - multiple slits casting shadows 
+ and averaging the shadow subpixel positions.
  5. Add data window zoom and scrolling ***(Done!)***
  6. Add measurement history display
  7. Bringing the core of the position and subpixel code into Arduino for Teensy 3.6
  8. data averaging two or more frames or sub-frames (windowed processing)
-*/
+ */
 // ==============================================================================================
 // imports:
 
@@ -137,13 +137,13 @@ void setup() {
   // ============================================================================================
   // Set the data & screen scaling:
   // You are encouraged to adjust these, especially to 'zoom in' to the shadow location see the subpixel details better.
-  
+
   // sets screen height relative to the highest ADC value, greater values increases screen height
   SCREEN_HEIGHT = int(HIGHEST_ADC_VALUE * 0.25); 
-  
+
   // leave alone! Used in many places to center data at middle height
   HALF_SCREEN_HEIGHT = SCREEN_HEIGHT / 2;
-  
+
   // ============================================================================================
   kernelSource = 0; // <<< <<< Choose a kernel source (0 = dynamically created gaussian):
   // Create a kernelGenerator object, which creates a kernel and saves it's data into an array
@@ -155,15 +155,15 @@ void setup() {
   // You are encouraged to try different signal sources, to see how the subpixel code behaves with 
   // nearly perfect waveforms
   // =============================================================================================
-  
+
   // Create a dataPlot object, which plots data and provides mouse sliding and zooming ability
   SG1 = new SignalGenerator();
   sigGenOutput = SG1.signalGeneratorOutput(signalSource, 64, 2000);
-  
+
   // the data length times the number of pixels per data point
   SCREEN_WIDTH = 1280;
   HALF_SCREEN_WIDTH = SCREEN_WIDTH / 2;
-  
+
   // set the screen dimensions
   surface.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);
   background(0);
@@ -172,15 +172,15 @@ void setup() {
   // dataStop set not past SENSOR_PIXELS, rather than SENSOR_PIXELS + KERNEL_LENGTH, to prevent convolution garbage at end 
   // from partial kernel immersion
   DP1 = new dataPlot(this, 0, 0, SCREEN_WIDTH, HALF_SCREEN_HEIGHT, SENSOR_PIXELS); 
-  
+
   // set framerate() a little above where increases don't speed it up much.
   // Also note, for highest speed, comment out drawing plots you don't care about.
   frameRate(500); 
-  
+
   println("SCREEN_WIDTH: " + SCREEN_WIDTH);
   println("SCREEN_HEIGHT: " + SCREEN_HEIGHT);
-  
-  if (signalSource == 3){
+
+  if (signalSource == 3) {
     noLoop();
     // Set up serial connection
     // Set to your Teensy COM port number to fix error, make sure it talks to Arduino software if stuck.
@@ -197,28 +197,28 @@ void serialEvent(Serial p) {
   redraw(); // fires the draw() function below. In cases where signalSource is not 3 (Serial Data), 
   // draw() fires automatically because we do not call noLoop()
 }
-  
+
 void draw() {
 
   chartRedraws++;
 
   if (chartRedraws >= 60) {
-     chartRedraws = 0;
-   // save a sensor data frame to a text file every 60 sensor frames
-   //String[] stringArray = new String[SENSOR_PIXELS];
-   //for(outerPtrX=0; outerPtrX < SENSOR_PIXELS; outerPtrX++) { 
-   //   stringArray[outerPtrX] = str(output[outerPtrX]);
-   //}
-   //   saveStrings("Pixel_Values.txt", stringArray);
+    chartRedraws = 0;
+    // save a sensor data frame to a text file every 60 sensor frames
+    //String[] stringArray = new String[SENSOR_PIXELS];
+    //for(outerPtrX=0; outerPtrX < SENSOR_PIXELS; outerPtrX++) { 
+    //   stringArray[outerPtrX] = str(output[outerPtrX]);
+    //}
+    //   saveStrings("Pixel_Values.txt", stringArray);
   }
   background(0);
   fill(255);
-  
+
   // Counts 1 to 60 and repeats, to provide a sense of the frame rate
-  text(chartRedraws, 10, 50); //<>//
+  text(chartRedraws, 10, 50);
 
   // Plot the Data using the DataPlot object
-   DP1.display();
+  DP1.display();
 }
 
 void keyPressed() {
@@ -231,4 +231,4 @@ void mouseDragged() {
 
 void mouseWheel(MouseEvent event) {
   DP1.mouseWheel(-event.getCount()); // note the minus sign (-) inverts the mouse wheel output direction
-} //<>//
+}

@@ -17,7 +17,7 @@
  * Inspired by "Pan And Zoom" by Dan Thompson, licensed under Creative Commons
  * Attribution-Share Alike 3.0 and GNU GPL license. Work:
  * http://openprocessing.org/visuals/?visualID= 46964
-*/
+ */
 
 public class PanZoomX {
 
@@ -36,7 +36,7 @@ public class PanZoomX {
   private float pan_y = 0;
   private float maxpan_x = 0;
   private float maxpan_y = 0;
-  
+
   private PApplet p;
 
   public PanZoomX(PApplet p, float maxPan_X) {
@@ -49,8 +49,8 @@ public class PanZoomX {
     int pmousex = p.pmouseX;
     pan_x = pan_x + mousex - pmousex;
     pan_x = constrain(pan_x, -maxpan_x * scale_x, (maxpan_x * scale_x) + maxpan_x);
-    
-    
+
+
     //int mousey = p.mouseY;
     //int pmousey = p.pmouseY;
     //pan_y = pan_y + mousey - pmousey;
@@ -109,7 +109,7 @@ public class PanZoomX {
   public void setPanX(float panX) {
     this.pan_x = panX;
   }
-  
+
   public float getMaxPanX() {
     return maxpan_x;
   }
@@ -117,7 +117,7 @@ public class PanZoomX {
   public void setMaxPanX(float maxPan_X) {
     this.maxpan_x = maxPan_X;
   }
-  
+
   public float getPanY() {
     return pan_y;
   }
@@ -125,7 +125,7 @@ public class PanZoomX {
   public void setPanY(float panY) {
     this.pan_y = panY;
   }
-  
+
   public float getMaxPanY() {
     return maxpan_y;
   }
@@ -133,7 +133,7 @@ public class PanZoomX {
   public void setMaxPanY(float maxPan_Y) {
     this.maxpan_y = maxPan_Y;
   }
-  
+
   public void setPanVelocity(float panVelocity) {
     this.panVelocity = panVelocity;
   }
