@@ -83,8 +83,10 @@ color COLOR_FIRST_DIFFERENCE_OF_OUTPUT = color(0, 255, 0);
 color COLOR_OUTPUT_DATA = color(255, 0, 255);
 color COLOR_EDGES = color(0, 255, 0);
 color COLOR_TAIL = color(0, 255, 255);
+
 // ==============================================================================================
 // Constants:
+
 // the number of bits data values consist of
 final int ADC_BIT_DEPTH = 12;
 
@@ -97,6 +99,7 @@ final int PREFIX = 0xFF;
 final float sensorPixelSpacing = 0.0635;           // 63.5 microns
 final float sensorPixelsPerMM = 15.74803149606299; // number of pixels per mm in sensor TSL1402R and TSL1410R
 final float sensorWidthAllPixels = 16.256;         // millimeters
+
 // ==============================================================================================
 // Arrays:
 
@@ -104,7 +107,9 @@ byte[] byteArray = new byte[0];      // array of raw serial data bytes
 int[] sigGenOutput = new int[0];     // array for signal generator output
 float[] kernel = new float[0];       // array for impulse response, or kernel
 
+// ==============================================================================================
 // Global Variables:
+
 int signalSource;                    // selects a signal data source
 int kernelSource;                    // selects a kernel
 int SENSOR_PIXELS;                   // number of discrete data values, 1 per sensor pixel
@@ -127,14 +132,16 @@ int HALF_SCREEN_WIDTH;               // half the screen width, reduces division 
 
 // ==============================================================================================
 // Set Objects
+
 Serial myPort;       // One Serial object, receives serial port data from Teensy 3.6 running sensor driver sketch
 dataPlot DP1;        // One dataPlot object, handles plotting data with mouse sliding and zooming ability
 SignalGenerator SG1; // Creates artificial signals for the system to process and display for testing & experientation
 KernelGenerator KG1; // Creates a kernel and saves it's data into an array
+
 // ==============================================================================================
 
 void setup() {
-  // ============================================================================================
+  
   // Set the data & screen scaling:
   // You are encouraged to adjust these, especially to 'zoom in' to the shadow location see the subpixel details better.
 
