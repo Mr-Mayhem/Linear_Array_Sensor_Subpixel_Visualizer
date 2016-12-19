@@ -643,7 +643,7 @@ class dataPlot { //<>//
   void greyscaleBarMapped(float x, float y, float value) {
 
     // prepare color to correspond to sensor pixel reading
-    color bColor = int(map(value, 0, HIGHEST_ADC_VALUE, 0, 255));
+    int bColor = int(map(value, 0, HIGHEST_ADC_VALUE, 0, 255));
 
     // Plot a row of pixels near the top of the screen ,
     // and color them with the 0 to 255 greyscale sensor value
@@ -656,7 +656,7 @@ class dataPlot { //<>//
   void greyscaleBarMappedAbs(float x, float y, float value) {
 
     // prepare color to correspond to sensor pixel reading
-    color bColor = int(abs(map(value, 0, HIGHEST_ADC_VALUE, 0, 255)));
+    int bColor = int(abs(map(value, 0, HIGHEST_ADC_VALUE, 0, 255)));
     // Plot a row of pixels near the top of the screen ,
     // and color them with the 0 to 255 greyscale sensor value
 
