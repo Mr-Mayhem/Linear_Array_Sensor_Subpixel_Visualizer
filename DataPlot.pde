@@ -162,9 +162,9 @@ class dataPlot { //<>//
     img = createImage(width, imageHeight, RGB);
     img.loadPixels();
 
-    for (int i = 0; i < img.pixels.length; i++) {
-      img.pixels[i] = color(20);
-    }
+    //for (int i = 0; i < img.pixels.length; i++) {
+    //  img.pixels[i] = color(20);
+    //}
 
     img.updatePixels();
   }
@@ -666,21 +666,18 @@ class dataPlot { //<>//
   }
 
   void calcWaterfall(int wWidth, int wHeight) {
-    loadPixels();
+
     img.loadPixels();
 
-    // Copy a row of pixels from the top of the video and write them to the top of the processing window 
+    // Copy a row of pixels from waterfallTop[] and write them to the top row of the waterfall image
     // scroll all rows down one row to make room for the new one.
-    //waterfallTop = perlinNoiseColor(255, wWidth);
-    //int rowToCopy = 600;
+    
+    // waterfallTop = perlinNoiseColor(255, wWidth); // perlin noise instead, try uncommenting this line, it looks like tv static
+
     arrayCopy(waterfallTop, img.pixels);
-    //for (int x = 0; x < wWidth; x++) {     // columns left to right
-    //  img.pixels[x] = pixels[(rowToCopy * wWidth) + x];             // a pixel
-    //}
 
     for (y = wHeight-2; y > -1; y--) {            // rows, begin at 0 (the bottom of screen) and count to top -2
       for (x = 0; x < wWidth; x++) {              // columns left to right
-        //img.set(0, y + 1, img.get(0, y, wWidth, 1)); // measured, is a little slower
         getPixelIndex = (y*wWidth)+x;             // one pixel
         setPixelIndex = getPixelIndex+wWidth;     // move down one row
         img.pixels[setPixelIndex] = img.pixels[getPixelIndex];
