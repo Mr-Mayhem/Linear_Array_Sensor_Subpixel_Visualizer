@@ -203,8 +203,8 @@ class dataPlot { //<>//
       // set the loop pointers to the last value each loop would normally reach during normal operation
       outerPtrX = wDataStopPos-1;  
       innerPtrX = KERNEL_LENGTH_MINUS1-1;
-      KG1.mouseWheel(step); // this passes to the kernel generator which makes the new kernel array on the fly
-      output = new float[KERNEL_LENGTH]; // this sizes the output array to match the new kernel array length
+      KG1.mouseWheel(step);               // this passes to the kernel generator which makes the new kernel array on the fly
+      output = new float[KERNEL_LENGTH];  // this sizes the output array to match the new kernel array length
     } else if (overPlot()) {
       PanZoomPlot.mouseWheel(step);
     }
@@ -572,12 +572,12 @@ class dataPlot { //<>//
       // posPeakSubPixelLoc=((a2-c2) / (a2+c2-(b2*2)))/2;
 
       preciseWidth = widthInPixels + (posPeakSubPixelLoc - negPeakSubPixelLoc);
-      //preciseWidthLowPass = (preciseWidthLowPass * 0.9) + (preciseWidth * 0.1);            // apply a simple low pass filter
+      //preciseWidthLowPass = (preciseWidthLowPass * 0.9) + (preciseWidth * 0.1); // apply a simple low pass filter
       preciseWidthMM = preciseWidth * sensorPixelSpacing * calCoefficient;
 
       // solve for the center position
       precisePos = (((negPeakLoc + negPeakSubPixelLoc) + (posPeakLoc + posPeakSubPixelLoc)) / 2);
-      precisePosLowPass = (precisePosLowPass * 0.9) + (precisePos * 0.1);   // apply a simple low pass filter
+      precisePosLowPass = (precisePosLowPass * 0.9) + (precisePos * 0.1);         // apply a simple low pass filter
 
       preciseMMPos = precisePosLowPass * sensorPixelSpacing;
 
@@ -643,25 +643,25 @@ class dataPlot { //<>//
   void greyscaleBarMapped(float x, float y, float value) {
 
     // prepare color to correspond to sensor pixel reading
-    int bColor = int(map(value, 0, HIGHEST_ADC_VALUE, 0, 255));
+    color bColor = int(map(value, 0, HIGHEST_ADC_VALUE, 0, 255));
 
     // Plot a row of pixels near the top of the screen ,
     // and color them with the 0 to 255 greyscale sensor value
 
-    stroke(bColor);
-    fill(bColor);
+    stroke(bColor, bColor, bColor);
+    fill(bColor, bColor, bColor);
     rect(x, y, scale_x, 10);
   }
 
   void greyscaleBarMappedAbs(float x, float y, float value) {
 
     // prepare color to correspond to sensor pixel reading
-    int bColor = int(abs(map(value, 0, HIGHEST_ADC_VALUE, 0, 255)));
+    color bColor = int(abs(map(value, 0, HIGHEST_ADC_VALUE, 0, 255)));
     // Plot a row of pixels near the top of the screen ,
     // and color them with the 0 to 255 greyscale sensor value
 
-    stroke(bColor);
-    fill(bColor);
+    stroke(bColor, bColor, bColor);
+    fill(bColor, bColor, bColor);
     rect(x, y, scale_x, 10);
   }
 
@@ -671,7 +671,7 @@ class dataPlot { //<>//
 
     // Copy a row of pixels from waterfallTop[] and write them to the top row of the waterfall image
     // scroll all rows down one row to make room for the new one.
-    
+
     // waterfallTop = perlinNoiseColor(255, wWidth); // perlin noise instead, try uncommenting this line, it looks like tv static
 
     arrayCopy(waterfallTop, img.pixels);

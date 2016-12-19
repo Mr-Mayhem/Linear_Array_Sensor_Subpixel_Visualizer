@@ -93,26 +93,23 @@ class KernelGenerator {
    https://github.com/biometrics/imagingbook/blob/master/src/gauss/GaussKernel1d.java
    */
 
-
-
-
-
   float[] makeGaussKernel1d(double sigma) {
     // scaling variables
-    float sum = 0;
-    float scale = 1;
+    double sum = 0;
+    double scale = 1;
 
     // make 1D Gauss filter kernel large enough
     // to avoid truncation effects (too small in ImageJ!) 
     int center = (int) (3.0 * sigma);
-    float[] kernel = new float[2 * center + 1]; // odd size
+    double[] kerneldb = new double[2 * center + 1]; // odd size
+    float[] kernelfl = new float[2 * center + 1];   // odd size
     double sigma2 = sigma * sigma;
 
-    for (int i=0; i<kernel.length; i++) {
+    for (int i=0; i<kerneldb.length; i++) {
       double r = center - i;
-      kernel[i] =  (float) Math.exp(-0.5 * (r*r) / sigma2);
-      sum += kernel[i];
-      //println("kernel[" + i + "] = " + kernel[i]);
+      kerneldb[i] =  (double) Math.exp(-0.5 * (r*r) / sigma2);
+      sum += kerneldb[i];
+      //println("kernel[" + i + "] = " + kerneldb[i]);
     }
 
     if (sum!= 0.0) {
@@ -124,11 +121,11 @@ class KernelGenerator {
     //println("gaussian kernel scale = " + scale); // print the scale.
     sum = 0; // clear the previous sum
     // scale the kernel values
-    for (int i=0; i < kernel.length; i++) {
-      kernel[i] = kernel[i] * scale;
-      sum += kernel[i];
+    for (int i=0; i < kerneldb.length; i++) {
+      kernelfl[i] = (float)(kerneldb[i] * scale);
+      sum += kernelfl[i];
       // print the kernel value.
-      //println("scaled gaussian kernel[" + i + "]:" + kernel[i]);
+      //println("scaled gaussian kernel[" + i + "]:" + kernelfl[i]);
     }
 
     if (sum!= 0.0) {
@@ -140,10 +137,11 @@ class KernelGenerator {
     // print the new scale. Should be very close to 1.
     //println("gaussian kernel new scale = " + scale);
 
-    KERNEL_LENGTH = kernel.length;                   // always odd
+    KERNEL_LENGTH = kernelfl.length;                 // always odd
     KERNEL_LENGTH_MINUS1 = KERNEL_LENGTH - 1;        // always even
     HALF_KERNEL_LENGTH = KERNEL_LENGTH_MINUS1 / 2;   // always even divided by 2 = even halves
-    return kernel;
+    //println("KERNEL_LENGTH = " + KERNEL_LENGTH);
+    return kernelfl;
   }
 
   //float[] createLoGKernal1d(float deviation) {
