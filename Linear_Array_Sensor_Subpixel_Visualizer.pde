@@ -78,11 +78,12 @@ import processing.serial.*;
 // colors
 
 color COLOR_ORIGINAL_DATA = color(255);
+color COLOR_ORIGINAL_DATA_FADED = color(25);
 color COLOR_KERNEL_DATA = color(255, 255, 0);
-color COLOR_FIRST_DIFFERENCE_OF_OUTPUT = color(0, 255, 0);
+color COLOR_FIRST_DIFFERENCE = color(0, 255, 0);
+color COLOR_FIRST_DIFFERENCE_FADED = color(0, 50, 0);
 color COLOR_OUTPUT_DATA = color(255, 0, 255);
-color COLOR_EDGES = color(0, 255, 0);
-color COLOR_TAIL = color(0, 255, 255);
+color COLOR_OUTPUT_DATA_FADED= color(50, 0, 50);
 
 // ==============================================================================================
 // Constants:
@@ -141,7 +142,7 @@ KernelGenerator KG1; // Creates a kernel and saves it's data into an array
 // ==============================================================================================
 
 void setup() {
-  
+
   // Set the data & screen scaling:
   // You are encouraged to adjust these, especially to 'zoom in' to the shadow location see the subpixel details better.
 
