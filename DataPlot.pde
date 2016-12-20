@@ -311,6 +311,16 @@ class dataPlot { //<>//
       greyscaleBarMapped(drawPtrX, 0, input);
 
       // ================================= Convolution Inner Loop  =============================================
+      // I 'invented' this convolution algorithm in experimentation. It's probably been done this way many times before, 
+      // I don't know for sure, but I haven't seen it yet in books or papers on the subject, but then again, I just 
+      // dipped my toe in the dsp waters. Regardless, I am proud of at least independently creating this little algorithm.
+     
+      // This convolution machine creates one output value for each input data value (each increment of the outer loop).
+      // It is unique in that it uses an output array of the same size as the kernel, rather than a larger size. 
+      // One nice advantage is that all output[] values get overwritten on each outer loop increment, without the need to 
+      // zero them in a seperate step. The kernel length can be changed, and things are set up so the output array length
+      // always matches the kernel length.
+      
       cOutPrev = cOut; // y[output-1] (the previous convolution output value)
 
       for (innerPtrX = 0; innerPtrX < KERNEL_LENGTH_MINUS1; innerPtrX++) {      // increment the inner loop pointer
@@ -321,7 +331,7 @@ class dataPlot { //<>//
 
       cOut = output[0]; // y[output] (the latest convolution output value)
 
-      // To make this convolution inner loop easier to understand, I unwrap the loop below 
+      // To make this convolution inner loop easier to understand, I unwrap the loop below.
       // The unwrapped loop code below runs ok, but don't mess with the kernel size via the mouse.
       // You can replace the loop code above with the unwrapped loop code below if the kernel length is fixed.
       // (The default kernel sigma 1.4 creates 9 kernel points, which we assume below.)
@@ -339,13 +349,13 @@ class dataPlot { //<>//
       //output[6] = output[7] + (input * kernel[6]); // 7th kernel point, convolution: multiply and accumulate
       //output[7] = output[8] + (input * kernel[7]); // 8th kernel point, convolution: multiply and accumulate
 
-      //output[8] = input * kernel[8];               // 9th kernel point, convolution: multiply only, no accumulate
+      //output[8] = input * kernel[8]; // 9th kernel point, convolution: multiply only, no accumulate
 
       //cOut = output[0]; // y[output] (the current convolution output value)
 
       // ==================================== End Convolution ==================================================
 
-      if (outerCount > KERNEL_LENGTH_MINUS1) {  // skip the first kernel's width of values which are garbage
+      if (outerCount > KERNEL_LENGTH_MINUS1) {  // Skip one kernel length of convolution output values, which are garbage.
         // plot the output data value
         stroke(COLOR_OUTPUT_DATA);
         point(drawPtrXLessK, HALF_SCREEN_HEIGHT - (cOut * scale_y));
@@ -432,6 +442,16 @@ class dataPlot { //<>//
       greyscaleBarMapped(drawPtrX, 0, input);
 
       // ================================= Convolution Inner Loop  =============================================
+      // I 'invented' this convolution algorithm in experimentation. It's probably been done this way many times before, 
+      // I don't know for sure, but I haven't seen it yet in books or papers on the subject, but then again, I just 
+      // dipped my toe in the dsp waters. Regardless, I am proud of at least independently creating this little algorithm.
+     
+      // This convolution machine creates one output value for each input data value (each increment of the outer loop).
+      // It is unique in that it uses an output array of the same size as the kernel, rather than a larger size. 
+      // One nice advantage is that all output[] values get overwritten on each outer loop increment, without the need to 
+      // zero them in a seperate step. The kernel length can be changed, and things are set up so the output array length
+      // always matches the kernel length.
+      
       cOutPrev = cOut; // y[output-1] (the previous convolution output value)
 
       for (innerPtrX = 0; innerPtrX < KERNEL_LENGTH_MINUS1; innerPtrX++) {      // increment the inner loop pointer
@@ -442,7 +462,7 @@ class dataPlot { //<>//
 
       cOut = output[0]; // y[output] (the latest convolution output value)
 
-      // To make this convolution inner loop easier to understand, I unwrap the loop below 
+      // To make this convolution inner loop easier to understand, I unwrap the loop below.
       // The unwrapped loop code below runs ok, but don't mess with the kernel size via the mouse.
       // You can replace the loop code above with the unwrapped loop code below if the kernel length is fixed.
       // (The default kernel sigma 1.4 creates 9 kernel points, which we assume below.)
@@ -460,13 +480,13 @@ class dataPlot { //<>//
       //output[6] = output[7] + (input * kernel[6]); // 7th kernel point, convolution: multiply and accumulate
       //output[7] = output[8] + (input * kernel[7]); // 8th kernel point, convolution: multiply and accumulate
 
-      //output[8] = input * kernel[8];               // 9th kernel point, convolution: multiply only, no accumulate
+      //output[8] = input * kernel[8]; // 9th kernel point, convolution: multiply only, no accumulate
 
       //cOut = output[0]; // y[output] (the current convolution output value)
 
       // ==================================== End Convolution ==================================================
 
-      if (outerCount > KERNEL_LENGTH_MINUS1) {  // skip the first kernel's width of values which are garbage
+      if (outerCount > KERNEL_LENGTH_MINUS1) {  // Skip one kernel length of convolution output values, which are garbage.
         // plot the output data value
         stroke(COLOR_OUTPUT_DATA);
         point(drawPtrXLessK, HALF_SCREEN_HEIGHT - (cOut * scale_y));
@@ -584,9 +604,9 @@ class dataPlot { //<>//
       // sum of a few offsets, so we don't need to recalculate
       shiftSumX = wDataStartPos - 1; 
 
-      waterfallTop[int(ScreenNegX)] = 0; // erase the old negative peak subpixel position marker pixel in the waterfall feeder array
-      waterfallTop[int(ScreenCenX)] = 0; // erase the old precise center position marker pixel in the waterfall feeder array
-      waterfallTop[int(ScreenPosX)] = 0; // erase the old positive peak subpixel position marker pixel in the waterfall feeder array
+      waterfallTop[int(ScreenNegX)] = 0; // set the previous waterfall feeder color markers back to black, we are about to set new ones.
+      waterfallTop[int(ScreenCenX)] = 0; 
+      waterfallTop[int(ScreenPosX)] = 0; 
 
       // Mark negPeakSubPixelLoc with red line
       noFill();
