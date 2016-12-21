@@ -291,7 +291,7 @@ class dataPlot { //<>//
     // draw grid, legend, and kernel
     //Grid1.drawGrid(SCREEN_WIDTH, SCREEN_HEIGHT, 32/scale_x);
 
-    //drawGrid2(pan_x, (wDataLen * scale_x) + pan_x, 0, height + pan_y, 64 * scale_x, 256 * scale_y);
+    drawGrid2(pan_x, (wDataStopPos * scale_x) + pan_x, 0, height + pan_y, 64 * scale_x, 256 * scale_y);
     // Counts 1 to 60 and repeats, to provide a sense of the frame rate
     fill(255);
     text(chartRedraws, 10, 50);

@@ -79,7 +79,7 @@ class SignalGenerator {
 
   int[] setHardCodedSensorData() {
 
-    int len = 60;
+    int len = 64;
 
     int[] data = new int[len];
 
@@ -108,19 +108,19 @@ class SignalGenerator {
     data[22] = 1000;
     data[23] = 1000;
     data[24] = 1000;
-    data[25] = 200;
-    data[26] = 200;
+    data[25] = 1000;
+    data[26] = 200; // 
     data[27] = 200;
     data[28] = 200;
     data[29] = 200;
     data[30] = 200;
-    data[31] = 200;
-    data[32] = 200;
+    data[31] = 200; // center (31 is the 32nd element because we started at zero)
+    data[32] = 200; 
     data[33] = 200;
     data[34] = 200;
     data[35] = 200;
-    data[36] = 1000;
-    data[37] = 1000;
+    data[36] = 200;
+    data[37] = 200; //
     data[38] = 1000;
     data[39] = 1000;
     data[40] = 1000;
@@ -143,7 +143,10 @@ class SignalGenerator {
     data[57] = 1000;
     data[58] = 1000;
     data[59] = 1000;
-
+    data[60] = 1000;
+    data[61] = 1000;
+    data[62] = 1000;
+    data[63] = 1000;
     return data;
   }
 
