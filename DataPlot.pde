@@ -280,7 +280,8 @@ class dataPlot { //<>//
 
     calcWaterfall(width, imageHeight);
     image(img, 0, height-imageHeight-125);
-
+    
+    fill(255);
     text("Use mouse to drag, mouse wheel to zoom", HALF_SCREEN_WIDTH-150, 60);
 
     text("pan_x: " + String.format("%.3f", pan_x) + 
@@ -446,7 +447,7 @@ class dataPlot { //<>//
 
       // copy one data value from the video array, which contains a row of color video integers
       // convert color pixel to greyscale, and multiply by 8 to bring the levels up. 
-      input = Pixelbrightness(videoArray[outerPtrX]) * 11;
+      input = Pixelbrightness(videoArray[outerPtrX]) *8; // 3 camera values of 255 max = 765 * 8 = 6120, 13 bits about
 
       // plot original data value
       stroke(COLOR_ORIGINAL_DATA);
