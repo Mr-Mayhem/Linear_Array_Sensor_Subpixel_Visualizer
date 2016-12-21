@@ -147,7 +147,7 @@ void setup() {
   // You are encouraged to adjust these, especially to 'zoom in' to the shadow location see the subpixel details better.
 
   // sets screen height relative to the highest ADC value, greater values increases screen height
-  SCREEN_HEIGHT = int(HIGHEST_ADC_VALUE * 0.25); 
+  SCREEN_HEIGHT = 700; 
 
   // leave alone! Used in many places to center data at middle height
   HALF_SCREEN_HEIGHT = SCREEN_HEIGHT / 2;
