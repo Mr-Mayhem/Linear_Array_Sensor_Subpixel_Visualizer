@@ -167,7 +167,7 @@ void setup() {
 
   // Create a dataPlot object, which plots data and provides mouse sliding and zooming ability
   SG1 = new SignalGenerator();
-  sigGenOutput = SG1.signalGeneratorOutput(signalSource, 128, 2000);
+  sigGenOutput = SG1.signalGeneratorOutput(signalSource, 128, 1000); // data source, data points, height of peaks
 
   // the data length times the number of pixels per data point
   SCREEN_WIDTH = 1280;
@@ -176,7 +176,6 @@ void setup() {
   // set the screen dimensions
   surface.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);
   
-  strokeWeight(1);
   // Create the dataPlot object, which handles plotting data with mouse sliding and zooming ability
   // dataStop set not past SENSOR_PIXELS, rather than SENSOR_PIXELS + KERNEL_LENGTH, to prevent convolution garbage at end 
   // from partial kernel immersion
@@ -186,6 +185,7 @@ void setup() {
   // Also note, for highest speed, comment out drawing plots you don't care about.
   frameRate(500);
   background(0);
+  strokeWeight(1);
   println("SCREEN_WIDTH: " + SCREEN_WIDTH);
   println("SCREEN_HEIGHT: " + SCREEN_HEIGHT);
 

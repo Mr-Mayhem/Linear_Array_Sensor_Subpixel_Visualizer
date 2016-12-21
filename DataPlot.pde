@@ -157,7 +157,7 @@ class dataPlot { //<>//
     Grid1 = new Grid();
 
     imageWidth = width;
-    imageHeight = height/4;
+    imageHeight = height/5;
 
     // init the waterfall image
     img = createImage(width, imageHeight, RGB);
@@ -302,7 +302,7 @@ class dataPlot { //<>//
 
     // plot kernel data point
     stroke(COLOR_KERNEL_DATA);
-
+    
     for (outerPtrX = 0; outerPtrX < KERNEL_LENGTH; outerPtrX++) { 
       // shift outerPtrX left by half the kernel size to correct for convolution shift (dead-on correct for odd-size kernels)
       drawPtrXLessK = ((outerPtrX - HALF_KERNEL_LENGTH) * scale_x) + pan_x; 
@@ -457,11 +457,6 @@ class dataPlot { //<>//
 
       convolutionInnerLoop(); // Convolution Inner Loop
 
-      //float x = drawPtrXLessK;
-      //x = constrain(x, 0, width-1);
-      //color scaledGreyScale = ScaledColorFromInt(int(cOut), HIGHEST_ADC_VALUE);
-      //waterfallTop[int(x)] = scaledGreyScale;
-
       if (outerCount > KERNEL_LENGTH_MINUS1) {  // Skip one kernel length of convolution output values, which are garbage.
         // plot the output data value
         stroke(COLOR_OUTPUT_DATA);
@@ -572,7 +567,7 @@ class dataPlot { //<>//
     // found the x location and y values for the positive and negative peaks of the first differences,
     // and the neighboring first differences immediately to the left and right of these on the x axis.
     // Therefore, all we have remaining to do, is the quadratic interpolation routines and the actual 
-    // drawing, after a quality check of the peak heights and width between them.
+    // drawing of their positions, after a quality check of the peak heights and width between them.
 
     // the subpixel location of a shadow edge is found as the peak of a parabola fitted to 
     // the top 3 points of a smoothed original data's first difference peak.

@@ -83,31 +83,31 @@ class SignalGenerator {
 
     int[] data = new int[len];
 
-    data[0] = 2000;
-    data[1] = 2000;
-    data[2] = 2000;
-    data[3] = 2000;
-    data[4] = 2000;
-    data[5] = 2000;
-    data[6] = 2000;
-    data[7] = 2000;
-    data[8] = 2000;
-    data[9] = 2000;
-    data[10] = 2000;
-    data[11] = 2000;
-    data[12] = 2000;
-    data[13] = 2000;
-    data[14] = 2000;
-    data[15] = 2000;
-    data[16] = 2000;
-    data[17] = 2000;
-    data[18] = 2000;
-    data[19] = 2000;
-    data[20] = 2000;
-    data[21] = 2000;
-    data[22] = 2000;
-    data[23] = 2000;
-    data[24] = 2000;
+    data[0] = 1000;
+    data[1] = 1000;
+    data[2] = 1000;
+    data[3] = 1000;
+    data[4] = 1000;
+    data[5] = 1000;
+    data[6] = 1000;
+    data[7] = 1000;
+    data[8] = 1000;
+    data[9] = 1000;
+    data[10] = 1000;
+    data[11] = 1000;
+    data[12] = 1000;
+    data[13] = 1000;
+    data[14] = 1000;
+    data[15] = 1000;
+    data[16] = 1000;
+    data[17] = 1000;
+    data[18] = 1000;
+    data[19] = 1000;
+    data[20] = 1000;
+    data[21] = 1000;
+    data[22] = 1000;
+    data[23] = 1000;
+    data[24] = 1000;
     data[25] = 200;
     data[26] = 200;
     data[27] = 200;
@@ -119,30 +119,30 @@ class SignalGenerator {
     data[33] = 200;
     data[34] = 200;
     data[35] = 200;
-    data[36] = 2000;
-    data[37] = 2000;
-    data[38] = 2000;
-    data[39] = 2000;
-    data[40] = 2000;
-    data[41] = 2000;
-    data[42] = 2000;
-    data[43] = 2000;
-    data[44] = 2000;
-    data[45] = 2000;
-    data[46] = 2000;
-    data[47] = 2000;
-    data[48] = 2000;
-    data[49] = 2000;
-    data[50] = 2000;
-    data[51] = 2000;
-    data[52] = 2000;
-    data[53] = 2000;
-    data[54] = 2000;
-    data[55] = 2000;
-    data[56] = 2000;
-    data[57] = 2000;
-    data[58] = 2000;
-    data[59] = 2000;
+    data[36] = 1000;
+    data[37] = 1000;
+    data[38] = 1000;
+    data[39] = 1000;
+    data[40] = 1000;
+    data[41] = 1000;
+    data[42] = 1000;
+    data[43] = 1000;
+    data[44] = 1000;
+    data[45] = 1000;
+    data[46] = 1000;
+    data[47] = 1000;
+    data[48] = 1000;
+    data[49] = 1000;
+    data[50] = 1000;
+    data[51] = 1000;
+    data[52] = 1000;
+    data[53] = 1000;
+    data[54] = 1000;
+    data[55] = 1000;
+    data[56] = 1000;
+    data[57] = 1000;
+    data[58] = 1000;
+    data[59] = 1000;
 
     return data;
   }
@@ -168,11 +168,11 @@ class SignalGenerator {
     // pulse
     if (positivePolarity) {
       for (int c = startPos; c < stopPos; c++) {
-        data[c] = 1 * multY;
+        data[c] = multY;
       }
     } else {
       for (int c = startPos; c < stopPos; c++) {
-        data[c] = -1 * multY;
+        data[c] = -multY;
       }
     }
 
