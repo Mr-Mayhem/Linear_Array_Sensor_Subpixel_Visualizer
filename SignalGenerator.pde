@@ -49,6 +49,9 @@ class SignalGenerator {
       sgOutput = perlinNoise(multY, dataLen);
       SENSOR_PIXELS = sgOutput.length;
       break;
+    case 5:
+      prepVideoMode();
+    break;
     default:
       // hard-coded sensor data containing a shadow edge profile
       sgOutput = SG1.setHardCodedSensorData(); 
@@ -68,7 +71,7 @@ class SignalGenerator {
         noiseInput = noiseIncrement;
       }
       // perlin noise
-      rdOut[c] = int(map(noise(noiseInput), 0, 1, 0, 1 * multY));  
+      rdOut[c] = int(map(noise(noiseInput), 0, 1, 0, multY));  
       //println (noise(noiseInput));
     }
     return rdOut;

@@ -35,7 +35,7 @@ class Legend {
     fill(COLOR_OUTPUT_DATA);
     rect(rectX, rectY, rectWidth, rectHeight);
     fill(255);
-    text("Smoothed convolution output data, shifted back into original phase", rectX + 20, rectY + 10);
+    text("Smoothed convolution output data", rectX + 20, rectY + 10);
 
     rectY += 20;
     stroke(COLOR_FIRST_DIFFERENCE);

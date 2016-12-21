@@ -73,6 +73,7 @@ Linear_Array_Sensor_Subpixel_Visualizer.pde, a demo of subpixel resolution shado
 // imports:
 
 import processing.serial.*;
+import processing.video.*;
 
 // ==============================================================================================
 // colors
@@ -107,7 +108,7 @@ final float sensorWidthAllPixels = 16.256;         // millimeters
 byte[] byteArray = new byte[0];      // array of raw serial data bytes
 int[] sigGenOutput = new int[0];     // array for signal generator output
 float[] kernel = new float[0];       // array for impulse response, or kernel
-
+int videoArray[] = new int[0];       // holds one row of video data, a row of integer pixels copied from the video image
 // ==============================================================================================
 // Global Variables:
 
@@ -138,11 +139,10 @@ Serial myPort;       // One Serial object, receives serial port data from Teensy
 dataPlot DP1;        // One dataPlot object, handles plotting data with mouse sliding and zooming ability
 SignalGenerator SG1; // Creates artificial signals for the system to process and display for testing & experientation
 KernelGenerator KG1; // Creates a kernel and saves it's data into an array
-
+Capture video;       // create video capture object named video
 // ==============================================================================================
 
 void setup() {
-
   // Set the data & screen scaling:
   // You are encouraged to adjust these, especially to 'zoom in' to the shadow location see the subpixel details better.
 
@@ -159,14 +159,15 @@ void setup() {
   KG1 = new KernelGenerator();
   KG1.setKernelSource(kernelSource);
   // ============================================================================================
-  signalSource = 0;  // <<< <<< Choose a signal source, 0 = raw data, 1 square pulse, 2 square wave, 3 serial data:
+  signalSource = 0;  // <<< <<< Choose a signal source, 0 = raw data, 1 square pulse, 2 square wave, 
+  // 3 serial data, 5 center height line grab from a video camera.
   // You are encouraged to try different signal sources, to see how the subpixel code behaves with 
   // nearly perfect waveforms
   // =============================================================================================
 
   // Create a dataPlot object, which plots data and provides mouse sliding and zooming ability
   SG1 = new SignalGenerator();
-  sigGenOutput = SG1.signalGeneratorOutput(signalSource, 64, 2000);
+  sigGenOutput = SG1.signalGeneratorOutput(signalSource, 128, 2000);
 
   // the data length times the number of pixels per data point
   SCREEN_WIDTH = 1280;
@@ -174,7 +175,7 @@ void setup() {
 
   // set the screen dimensions
   surface.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);
-  background(0);
+  
   strokeWeight(1);
   // Create the dataPlot object, which handles plotting data with mouse sliding and zooming ability
   // dataStop set not past SENSOR_PIXELS, rather than SENSOR_PIXELS + KERNEL_LENGTH, to prevent convolution garbage at end 
@@ -183,8 +184,8 @@ void setup() {
 
   // set framerate() a little above where increases don't speed it up much.
   // Also note, for highest speed, comment out drawing plots you don't care about.
-  frameRate(500); 
-
+  frameRate(500);
+  background(0);
   println("SCREEN_WIDTH: " + SCREEN_WIDTH);
   println("SCREEN_HEIGHT: " + SCREEN_HEIGHT);
 
@@ -196,6 +197,10 @@ void setup() {
     // the serial port will buffer until prefix (unique byte that equals 255) and then fire serialEvent()
     myPort.bufferUntil(PREFIX);
   }
+  if (signalSource == 5) {
+    noLoop();
+    frameRate(120); // cheap cameras are 30, but we aim a little higher so internals are not 'lazy'
+  }
 }
 
 void serialEvent(Serial p) { 
@@ -204,6 +209,11 @@ void serialEvent(Serial p) {
   bytesRead = p.readBytes(byteArray);
   redraw(); // fires the draw() function below. In cases where signalSource is not 3 (Serial Data), 
   // draw() fires automatically because we do not call noLoop()
+}
+
+void captureEvent(Capture video) {
+  video.read();
+  redraw();
 }
 
 void draw() {
@@ -219,14 +229,10 @@ void draw() {
     //}
     //   saveStrings("Pixel_Values.txt", stringArray);
   }
-  background(0);
-  fill(255);
-
-  // Counts 1 to 60 and repeats, to provide a sense of the frame rate
-  text(chartRedraws, 10, 50);
-
+  
   // Plot the Data using the DataPlot object
   DP1.display();
+
 }
 
 void keyPressed() {
@@ -239,4 +245,53 @@ void mouseDragged() {
 
 void mouseWheel(MouseEvent event) {
   DP1.mouseWheel(-event.getCount()); // note the minus sign (-) inverts the mouse wheel output direction
+}
+
+void prepVideoMode() {
+  String[] cameras = Capture.list();
+
+  if (cameras == null) {
+    println("Failed to retrieve the list of available cameras, will try the default...");
+  } 
+  if (cameras.length == 0) {
+    println("There are no cameras available for capture.");
+    exit();
+  } else {
+    println("Available cameras:");
+
+    for (int i = 0; i < cameras.length; i++) {
+      println(i + cameras[i]);
+    }
+    video = new Capture(this, 640, 480);
+    //video = new Capture(this, cameras[0]);
+    // Start capturing the images from the camera
+    video.start();
+    SENSOR_PIXELS = video.width;
+    videoArray = new int[SENSOR_PIXELS];
+    //surface.setSize(video.width, video.height);
+  }
+}
+
+int grey(color p) {
+  return max((p >> 16) & 0xff, (p >> 8) & 0xff, p & 0xff);
+}
+
+int Pixelbrightness(color p) {
+  
+  int r = (p >> 16) & 0xff;
+  int g = (p >> 8) & 0xff;
+  int b = p & 0xff;
+  int value = 299*(r) + 587*(g) + 114*(b);
+  
+  if (value > 0) {
+    value = value/1000;
+  }else{
+    value = 0;
+  }
+  
+  return value;
+}
+
+color ScaledColorFromInt(int value, int MaxValueRef){
+  return color(map(value, 0, MaxValueRef, 0, 255));
 }

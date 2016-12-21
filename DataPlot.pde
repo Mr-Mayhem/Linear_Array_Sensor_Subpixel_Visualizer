@@ -94,7 +94,7 @@ class dataPlot { //<>//
   int setPixelIndex;
   //int dataArray[] = new int[0];
   PImage img;
-
+  PImage cameraImage;
   // =============================================================================================
   //Arrays
 
@@ -102,7 +102,7 @@ class dataPlot { //<>//
   float[] output = new float[0]; 
 
   // array which feeds the waterfall display
-  color[] waterfallTop = new color[0]; 
+  int[] waterfallTop = new int[0]; 
   // =============================================================================================
 
   Legend Legend1;             // One Legend object, lists the colors and what they represent
@@ -141,7 +141,7 @@ class dataPlot { //<>//
 
     // arrays for output signals, get resized after kernel size is known
     output = new float[KERNEL_LENGTH];
-    waterfallTop = new color[width];  // feeds the waterfall display
+    waterfallTop = new int[width+1];  // feeds the waterfall display
 
     // used for generating smooth noise for original data; lower values are smoother noise
     noiseInput = 0.1;
@@ -160,13 +160,7 @@ class dataPlot { //<>//
 
     // init the waterfall image
     img = createImage(width, imageHeight, RGB);
-    img.loadPixels();
-
-    //for (int i = 0; i < img.pixels.length; i++) {
-    //  img.pixels[i] = color(20);
-    //}
-
-    img.updatePixels();
+    cameraImage = createImage(640, 60, RGB);
   }
 
   boolean overKernel() {
@@ -211,7 +205,11 @@ class dataPlot { //<>//
   }
 
   void display() {
-
+    background(0);
+    // Counts 1 to 60 and repeats, to provide a sense of the frame rate
+    fill(255);
+    text(chartRedraws, 10, 50);
+    
     // update the local pan and scale variables from the PanZoom object which maintains them
     pan_x = PanZoomPlot.getPanX();
     scale_x = PanZoomPlot.getScaleX();
@@ -227,18 +225,55 @@ class dataPlot { //<>//
     //wDataStartPos = constrain(wDataStartPos, 0, dpDataLen);
     //wDataStopPos = constrain(wDataStopPos, 0, dpDataLen);
 
-    // draw grid, legend, and kernel
-    //Grid1.drawGrid(SCREEN_WIDTH, SCREEN_HEIGHT, 32/scale_x);
-
-    //drawGrid2(pan_x, (wDataLen * scale_x) + pan_x, 0, height + pan_y, 64 * scale_x, 256 * scale_y);
-
-    Legend1.drawLegend();
-    drawKernel(0, KG1.sigma);
-
-    if (signalSource == 3) {         // Plot using Serial Data
+    if (signalSource == 3) {
+      // Plot using Serial data, remember to plug in Teensy 3.6 usb programming cable and that sister sketch is running
       processSerialData();          // from 0 to SENSOR_PIXELS-1
-    } else
-    {                               // Plot using Simulated Data
+    } else if (signalSource == 5) { 
+      // Plot using Video data, make sure at least one camera is running, resolution default set to 640 x 480
+      video.loadPixels();
+      cameraImage.loadPixels();
+      wDataStartPos = 0;
+      wDataStopPos = video.width;
+
+      // Copy rowToCopy pixels from the video and write them to videoData array, which holds one row of pixel values
+      int rowToCopy = video.height/2;
+      int firstPixel = (rowToCopy * video.width);
+     
+      //println(firstPixel);
+      for (int x = 0; x < SENSOR_PIXELS; x++) {  // copy one row of video data to the top row of img
+        int index = (firstPixel + x);
+        videoArray[x] = video.pixels[index];     // copy pixel
+        video.pixels[index] = color(0, 255, 0);  // color pixel green so we can see where the row is in the video display
+      }
+
+      video.updatePixels();
+      int srcYOffset = rowToCopy -30;
+      int dest_w = cameraImage.width;
+      int dest_h = cameraImage.height;
+      // we don't want to display the entire camera image, just the area vertically near the row we are using
+      // copy the center 120 pixels from the video to the cameraImage
+      
+      for (y = 0; y < dest_h; y++) {                  // rows top down
+        for (x = 0; x < dest_w; x++) {                // columns left to right
+          setPixelIndex = (y * dest_w) + x;           // pixel source index  
+          getPixelIndex = ((y + srcYOffset) * dest_w)+x;   // pixel dest index
+          cameraImage.pixels[setPixelIndex] = video.pixels[getPixelIndex];
+        }
+      }
+      //arrayCopy(video.pixels, cameraImage.pixels);
+      cameraImage.updatePixels();
+      //image( img, x, y, width, height); 
+      float x = (cameraImage.width * scale_x);
+      image(cameraImage, pan_x, 60, x, cameraImage.height);
+      //set(0, 60, video);
+
+      processVideoData();
+
+    } else {      // Plot using Simulated Data
+      background(0);
+      // Counts 1 to 60 and repeats, to provide a sense of the frame rate
+      fill(255);
+      text(chartRedraws, 10, 50);
       processSignalGeneratorData(); // from 0 to SENSOR_PIXELS-1
     }
 
@@ -247,11 +282,18 @@ class dataPlot { //<>//
     calcWaterfall(width, imageHeight);
     image(img, 0, height-imageHeight-125);
 
-    text("Use mouse to drag, mouse wheel to zoom", HALF_SCREEN_WIDTH-150, 90);
+    text("Use mouse to drag, mouse wheel to zoom", HALF_SCREEN_WIDTH-150, 60);
 
     text("pan_x: " + String.format("%.3f", pan_x) + 
       "  scale_x: " + String.format("%.3f", scale_x), 
       50, 50);
+    
+    // draw grid, legend, and kernel
+    //Grid1.drawGrid(SCREEN_WIDTH, SCREEN_HEIGHT, 32/scale_x);
+
+    //drawGrid2(pan_x, (wDataLen * scale_x) + pan_x, 0, height + pan_y, 64 * scale_x, 256 * scale_y);
+    Legend1.drawLegend();
+    drawKernel(0, KG1.sigma);
   }
 
   void drawKernel(float pan_x, double sigma) {
@@ -310,51 +352,8 @@ class dataPlot { //<>//
       // draw section of greyscale bar showing the 'color' of original data values
       greyscaleBarMapped(drawPtrX, 0, input);
 
-      // ================================= Convolution Inner Loop  =============================================
-      // I 'invented' this convolution algorithm in experimentation. It's probably been done this way many times before, 
-      // I don't know for sure, but I haven't seen it yet in books or papers on the subject, but then again, I just 
-      // dipped my toe in the dsp waters. Regardless, I am proud of at least independently creating this little algorithm.
-     
-      // This convolution machine creates one output value for each input data value (each increment of the outer loop).
-      // It is unique in that it uses an output array of the same size as the kernel, rather than a larger size. 
-      // One nice advantage is that all output[] values get overwritten on each outer loop increment, without the need to 
-      // zero them in a seperate step. The kernel length can be changed, and things are set up so the output array length
-      // always matches the kernel length.
+      convolutionInnerLoop(); // Convolution Inner Loop
       
-      cOutPrev = cOut; // y[output-1] (the previous convolution output value)
-
-      for (innerPtrX = 0; innerPtrX < KERNEL_LENGTH_MINUS1; innerPtrX++) {      // increment the inner loop pointer
-        output[innerPtrX] = output[innerPtrX+1] + (input * kernel[innerPtrX]);  // convolution: multiply and accumulate
-      }
-
-      output[KERNEL_LENGTH_MINUS1] = input * kernel[KERNEL_LENGTH_MINUS1];      // convolution: multiply only, no accumulate
-
-      cOut = output[0]; // y[output] (the latest convolution output value)
-
-      // To make this convolution inner loop easier to understand, I unwrap the loop below.
-      // The unwrapped loop code below runs ok, but don't mess with the kernel size via the mouse.
-      // You can replace the loop code above with the unwrapped loop code below if the kernel length is fixed.
-      // (The default kernel sigma 1.4 creates 9 kernel points, which we assume below.)
-      // Remember to comment out the original convolution code above or you will convolve the input data twice.
-      // Assuming a 9 point kernel:
-
-      //cOutPrev = cOut; // y[output-1] (the previous convolution output value)
-
-      //output[0] = output[1] + (input * kernel[0]); // 1st kernel point, convolution: multiply and accumulate
-      //output[1] = output[2] + (input * kernel[1]); // 2nd kernel point, convolution: multiply and accumulate
-      //output[2] = output[3] + (input * kernel[2]); // 3rd kernel point, convolution: multiply and accumulate
-      //output[3] = output[4] + (input * kernel[3]); // 4th kernel point, convolution: multiply and accumulate
-      //output[4] = output[5] + (input * kernel[4]); // 5th kernel point, convolution: multiply and accumulate
-      //output[5] = output[6] + (input * kernel[5]); // 6th kernel point, convolution: multiply and accumulate
-      //output[6] = output[7] + (input * kernel[6]); // 7th kernel point, convolution: multiply and accumulate
-      //output[7] = output[8] + (input * kernel[7]); // 8th kernel point, convolution: multiply and accumulate
-
-      //output[8] = input * kernel[8]; // 9th kernel point, convolution: multiply only, no accumulate
-
-      //cOut = output[0]; // y[output] (the current convolution output value)
-
-      // ==================================== End Convolution ==================================================
-
       if (outerCount > KERNEL_LENGTH_MINUS1) {  // Skip one kernel length of convolution output values, which are garbage.
         // plot the output data value
         stroke(COLOR_OUTPUT_DATA);
@@ -441,50 +440,7 @@ class dataPlot { //<>//
       // draw section of greyscale bar showing the 'color' of original data values
       greyscaleBarMapped(drawPtrX, 0, input);
 
-      // ================================= Convolution Inner Loop  =============================================
-      // I 'invented' this convolution algorithm in experimentation. It's probably been done this way many times before, 
-      // I don't know for sure, but I haven't seen it yet in books or papers on the subject, but then again, I just 
-      // dipped my toe in the dsp waters. Regardless, I am proud of at least independently creating this little algorithm.
-     
-      // This convolution machine creates one output value for each input data value (each increment of the outer loop).
-      // It is unique in that it uses an output array of the same size as the kernel, rather than a larger size. 
-      // One nice advantage is that all output[] values get overwritten on each outer loop increment, without the need to 
-      // zero them in a seperate step. The kernel length can be changed, and things are set up so the output array length
-      // always matches the kernel length.
-      
-      cOutPrev = cOut; // y[output-1] (the previous convolution output value)
-
-      for (innerPtrX = 0; innerPtrX < KERNEL_LENGTH_MINUS1; innerPtrX++) {      // increment the inner loop pointer
-        output[innerPtrX] = output[innerPtrX+1] + (input * kernel[innerPtrX]);  // convolution: multiply and accumulate
-      }
-
-      output[KERNEL_LENGTH_MINUS1] = input * kernel[KERNEL_LENGTH_MINUS1];      // convolution: multiply only, no accumulate
-
-      cOut = output[0]; // y[output] (the latest convolution output value)
-
-      // To make this convolution inner loop easier to understand, I unwrap the loop below.
-      // The unwrapped loop code below runs ok, but don't mess with the kernel size via the mouse.
-      // You can replace the loop code above with the unwrapped loop code below if the kernel length is fixed.
-      // (The default kernel sigma 1.4 creates 9 kernel points, which we assume below.)
-      // Remember to comment out the original convolution code above or you will convolve the input data twice.
-      // Assuming a 9 point kernel:
-
-      //cOutPrev = cOut; // y[output-1] (the previous convolution output value)
-
-      //output[0] = output[1] + (input * kernel[0]); // 1st kernel point, convolution: multiply and accumulate
-      //output[1] = output[2] + (input * kernel[1]); // 2nd kernel point, convolution: multiply and accumulate
-      //output[2] = output[3] + (input * kernel[2]); // 3rd kernel point, convolution: multiply and accumulate
-      //output[3] = output[4] + (input * kernel[3]); // 4th kernel point, convolution: multiply and accumulate
-      //output[4] = output[5] + (input * kernel[4]); // 5th kernel point, convolution: multiply and accumulate
-      //output[5] = output[6] + (input * kernel[5]); // 6th kernel point, convolution: multiply and accumulate
-      //output[6] = output[7] + (input * kernel[6]); // 7th kernel point, convolution: multiply and accumulate
-      //output[7] = output[8] + (input * kernel[7]); // 8th kernel point, convolution: multiply and accumulate
-
-      //output[8] = input * kernel[8]; // 9th kernel point, convolution: multiply only, no accumulate
-
-      //cOut = output[0]; // y[output] (the current convolution output value)
-
-      // ==================================== End Convolution ==================================================
+      convolutionInnerLoop(); // Convolution Inner Loop
 
       if (outerCount > KERNEL_LENGTH_MINUS1) {  // Skip one kernel length of convolution output values, which are garbage.
         // plot the output data value
@@ -538,6 +494,148 @@ class dataPlot { //<>//
     }
   }
 
+  void processVideoData() {
+
+    int outerCount = 0;
+
+    negPeakLoc = wDataStopPos; // one past the last pixel, to prevent false positives?
+    posPeakLoc = wDataStopPos; // one past the last pixel, to prevent false positives?
+    negPeakVal = 0;
+    posPeakVal = 0;
+
+    // increment the outer loop pointer from wDataStartPos to wDataStopPos - 1
+    for (outerPtrX = wDataStartPos; outerPtrX < wDataStopPos; outerPtrX++) {
+      outerCount++; // lets us index (x axis) on the screen offset from outerPtrX
+
+      // Below we prepare 3 x shift correction indexes to reduce the math work.
+
+      // the outer pointer to the screen X axis (l)
+      drawPtrX = (outerCount * scale_x) + pan_x;
+
+      // shift left by half the kernel size to correct for convolution shift (dead-on correct for odd-size kernels)
+      drawPtrXLessK = ((outerCount - HALF_KERNEL_LENGTH) * scale_x) + pan_x; 
+
+      // same as above, but shift left additional 0.5 to properly place the difference point in-between it's parents
+      drawPtrXLessKlessD1 = (((outerCount - HALF_KERNEL_LENGTH) - 0.5) * scale_x) + pan_x;
+
+      // copy one data value from the video array, which contains a row of color video integers
+      // convert color pixel to greyscale, and multiply by 8 to bring the levels up. 
+      input = Pixelbrightness(videoArray[outerPtrX]) * 11;
+
+      // plot original data value
+      stroke(COLOR_ORIGINAL_DATA);
+
+      point(drawPtrX, HALF_SCREEN_HEIGHT - (input * scale_y));
+      // draw section of greyscale bar showing the 'color' of original data values
+      greyscaleBarMapped(drawPtrX, 0, input);
+
+      convolutionInnerLoop(); // Convolution Inner Loop
+      
+      //float x = drawPtrXLessK;
+      //x = constrain(x, 0, width-1);
+      //color scaledGreyScale = ScaledColorFromInt(int(cOut), HIGHEST_ADC_VALUE);
+      //waterfallTop[int(x)] = scaledGreyScale;
+      
+      if (outerCount > KERNEL_LENGTH_MINUS1) {  // Skip one kernel length of convolution output values, which are garbage.
+        // plot the output data value
+        stroke(COLOR_OUTPUT_DATA);
+        point(drawPtrXLessK, HALF_SCREEN_HEIGHT - (cOut * scale_y));
+        //println("output[" + outerPtrX + "]" +output[outerPtrX]);
+
+        // draw section of greyscale bar showing the 'color' of output data values
+        greyscaleBarMapped(drawPtrXLessK, 11, cOut);
+
+        // =================== Find the 1st difference and store the last two values  ==========================
+        // finds the differences and maintains a history of the previous 2 difference values as well,
+        // so we can collect all 3 points bracketing a pos or neg peak, needed to feed the subpixel code.
+
+        diff2=diff1;      // (left y value)
+        diff1=diff0;      // (center y value)  
+        // find 1st difference of the convolved data, the difference between adjacent points in the smoothed data.
+        diff0 = cOut - cOutPrev; // (right y value) // difference between the current convolution output value 
+        // and the previous one, in the form y[x] - y[x-1]
+        // In dsp, this difference is preferably called the 1st difference, 
+        // but some call it the 1st derivative or the partial derivative.
+
+        // =================================== End 1st difference ===============================================
+
+        // plot the first difference data value
+        stroke(COLOR_FIRST_DIFFERENCE);
+        point((drawPtrXLessKlessD1), HALF_SCREEN_HEIGHT - (diff0 * scale_y));
+        // draw section of greyscale bar showing the 'color' of output2 data values
+        //void greyscaleBarMapped(float x, float scale_x, float y, float value) {
+        greyscaleBarMappedAbs((drawPtrXLessKlessD1), 22, diff0);
+
+        // find the the tallest positive and negative peaks in 1st difference of the convolution output data, 
+        // which is the point of steepest positive and negative slope
+        // We skip the first KERNEL_LENGTH of convolution output data, which is garbage from smoothing convolution 
+        // kernel not being fully immersed in the input data.
+
+        if (diff1 > posPeakVal) {
+          posPeakVal = diff1;
+          posPeakLoc = (outerPtrX - 1.5) - HALF_KERNEL_LENGTH; // x-1
+          posPeakRightPixel = diff0;   // y value @ x index -1 (right)
+          posPeakCenterPixel = diff1;  // y value @ x index -2 (center) (positive 1st difference peak location)
+          posPeakLeftPixel = diff2;    // y value @ x index -3 (left)
+        } else if (diff1 < negPeakVal) {
+          negPeakVal = diff1;
+          negPeakLoc = (outerPtrX - 1.5) - HALF_KERNEL_LENGTH; // x-1
+          negPeakRightPixel = diff0;   // y value @ x index -1 (right)
+          negPeakCenterPixel = diff1;  // y value @ x index -2 (center) (negative 1st difference peak location)
+          negPeakLeftPixel = diff2;    // y value @ x index -3 (left)
+        }
+      }
+    }
+  }
+  void convolutionInnerLoop(){
+      // ================================= Convolution Inner Loop  =============================================
+      // I 'invented' this convolution algorithm during experimentation in December 2016. Inner loops have probably been 
+      // done this way many times before, I don't know for sure, but I haven't seen it yet in books or papers on the subject, 
+      // but then again, I just recently started to play with dsp and haven't done an exhaustive search for it elsewhere. 
+      // Regardless, I am proud of independently creating this little inner 1-dimentional convolution algorithm; I did not 
+      // copy it from a book or the internet, it emerged from a series of what-if experiments I did.
+
+      // This convolution machine creates one output value for each input data value (each increment of the outer loop).
+      // It is unique in that it uses an output array of the same size as the kernel, rather than a larger size. 
+      // One advantage is that all output[] values get overwritten for each outer loop count, without the need to 
+      // zero them in a seperate step. The kernel length can be easily changed before processing a frame of data.
+      // The output array size should always equal the kernel array size. Final output comes from output[0].
+
+      cOutPrev = cOut; // y[output-1] (the previous convolution output value)
+
+      for (innerPtrX = 0; innerPtrX < KERNEL_LENGTH_MINUS1; innerPtrX++) {      // increment the inner loop pointer
+        output[innerPtrX] = output[innerPtrX+1] + (input * kernel[innerPtrX]);  // convolution: multiply and accumulate
+      }
+
+      output[KERNEL_LENGTH_MINUS1] = input * kernel[KERNEL_LENGTH_MINUS1];      // convolution: multiply only, no accumulate
+
+      cOut = output[0]; // y[output] (the latest convolution output value)
+
+      // To make this convolution inner loop easier to understand, I unwrap the loop below.
+      // The unwrapped loop code below runs ok, but don't mess with the kernel size via the mouse.
+      // You can replace the loop code above with the unwrapped loop code below if the kernel length is fixed.
+      // (The default kernel sigma 1.4 creates 9 kernel points, which we assume below.)
+      // Remember to comment out the original convolution code above or you will convolve the input data twice.
+      // Assuming a 9 point kernel:
+
+      //cOutPrev = cOut; // y[output-1] (the previous convolution output value)
+
+      //output[0] = output[1] + (input * kernel[0]); // 1st kernel point, convolution: multiply and accumulate
+      //output[1] = output[2] + (input * kernel[1]); // 2nd kernel point, convolution: multiply and accumulate
+      //output[2] = output[3] + (input * kernel[2]); // 3rd kernel point, convolution: multiply and accumulate
+      //output[3] = output[4] + (input * kernel[3]); // 4th kernel point, convolution: multiply and accumulate
+      //output[4] = output[5] + (input * kernel[4]); // 5th kernel point, convolution: multiply and accumulate
+      //output[5] = output[6] + (input * kernel[5]); // 6th kernel point, convolution: multiply and accumulate
+      //output[6] = output[7] + (input * kernel[6]); // 7th kernel point, convolution: multiply and accumulate
+      //output[7] = output[8] + (input * kernel[7]); // 8th kernel point, convolution: multiply and accumulate
+
+      //output[8] = input * kernel[8]; // 9th kernel point, convolution: multiply only, no accumulate
+
+      //cOut = output[0]; // y[output] (the current convolution output value)
+
+      // ==================================== End Convolution ==================================================
+
+  }
   void subpixelCalc() {
 
     // we should have already ran a gaussian smoothing routine over the data, and 
@@ -563,6 +661,12 @@ class dataPlot { //<>//
     precisePos = 0;
     negPeakSubPixelLoc = 0;
     posPeakSubPixelLoc = 0;
+    
+    waterfallTop[int(ScreenNegX)] = 0; // set the previous waterfall feeder color markers back to black, we are about to set new ones.
+    waterfallTop[int(ScreenCenX)] = 0; 
+    waterfallTop[int(ScreenPosX)] = 0; 
+    
+    //arrayCopy (videoArray, waterfallTop);
 
     if (negPeakVal < -64 && posPeakVal > 64) // check for significant threshold
     {
@@ -597,16 +701,12 @@ class dataPlot { //<>//
 
       // solve for the center position
       precisePos = (((negPeakLoc + negPeakSubPixelLoc) + (posPeakLoc + posPeakSubPixelLoc)) / 2);
-      precisePosLowPass = (precisePosLowPass * 0.9) + (precisePos * 0.1);         // apply a simple low pass filter
+      //precisePosLowPass = (precisePosLowPass * 0.9) + (precisePos * 0.1);         // apply a simple low pass filter
 
-      preciseMMPos = precisePosLowPass * sensorPixelSpacing;
+      preciseMMPos = precisePos * sensorPixelSpacing;
 
       // sum of a few offsets, so we don't need to recalculate
       shiftSumX = wDataStartPos - 1; 
-
-      waterfallTop[int(ScreenNegX)] = 0; // set the previous waterfall feeder color markers back to black, we are about to set new ones.
-      waterfallTop[int(ScreenCenX)] = 0; 
-      waterfallTop[int(ScreenPosX)] = 0; 
 
       // Mark negPeakSubPixelLoc with red line
       noFill();
@@ -619,7 +719,7 @@ class dataPlot { //<>//
 
       // Mark subpixel center with white line
       stroke(255);
-      ScreenCenX = ((precisePosLowPass - shiftSumX) * scale_x) + pan_x;
+      ScreenCenX = ((precisePos - shiftSumX) * scale_x) + pan_x;
       ScreenCenX = constrain(ScreenCenX, 0, width-1);
       line(ScreenCenX, HALF_SCREEN_HEIGHT + subpixelMarkerLen, ScreenCenX, HALF_SCREEN_HEIGHT - subpixelMarkerLen); 
       waterfallTop[int(ScreenCenX)] = color(255);
@@ -663,25 +763,24 @@ class dataPlot { //<>//
   void greyscaleBarMapped(float x, float y, float value) {
 
     // prepare color to correspond to sensor pixel reading
-    int bColor = int(map(value, 0, HIGHEST_ADC_VALUE, 0, 255));
+    color bColor = color(map(value, 0, HIGHEST_ADC_VALUE, 0, 255));
 
     // Plot a row of pixels near the top of the screen ,
     // and color them with the 0 to 255 greyscale sensor value
-
-    stroke(bColor, bColor, bColor);
-    fill(bColor, bColor, bColor);
+    stroke(bColor);
+    fill(bColor);
     rect(x, y, scale_x, 10);
   }
 
   void greyscaleBarMappedAbs(float x, float y, float value) {
 
     // prepare color to correspond to sensor pixel reading
-    int bColor = int(abs(map(value, 0, HIGHEST_ADC_VALUE, 0, 255)));
+    color bColor = color(abs(map(value, 0, HIGHEST_ADC_VALUE, 0, 255)));
     // Plot a row of pixels near the top of the screen ,
     // and color them with the 0 to 255 greyscale sensor value
 
-    stroke(bColor, bColor, bColor);
-    fill(bColor, bColor, bColor);
+    stroke(bColor);
+    fill(bColor);
     rect(x, y, scale_x, 10);
   }
 

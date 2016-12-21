@@ -17,7 +17,7 @@ class KernelGenerator {
     // this is an important adjustment for subpixel accuracy
     // too low and the noise creeps in and the peaks are not locally symmectrical (bad)
     // too high, and the peaks get too far smoothed out and accuracy suffers as a result
-    gaussianKernelSigma = 1.4; 
+    gaussianKernelSigma = 1.2; 
 
     // input to kernel creation function, controls spreading of loG kernel
     loGKernelSigma = 1.0;
