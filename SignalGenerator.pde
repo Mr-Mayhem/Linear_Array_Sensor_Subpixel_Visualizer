@@ -21,19 +21,19 @@ class SignalGenerator {
     switch (signalSource) {
     case 0: 
       // hard-coded sensor data containing a shadow edge profile
-      sgOutput = SG1.setHardCodedSensorData(); 
+      sgOutput = SG1.hardCodedSensorData(); 
       SENSOR_PIXELS = sgOutput.length;
       break;
     case 1:
       // a single adjustable step impulse, (square pos or neg pulse) 
       // useful for verifying the kernel is doing what it should.
 
-      sgOutput = setInputSingleImpulse(dataLen, multY, 16, false);
+      sgOutput = singleImpulse(dataLen, multY, 16, false);
       SENSOR_PIXELS = sgOutput.length;
       break;
     case 2: 
       // an adjustable square wave
-      sgOutput = setInputSquareWave(dataLen, 40, multY);
+      sgOutput = squareWave(dataLen, 40, multY);
       SENSOR_PIXELS = sgOutput.length;
       break;
     case 3: 
@@ -51,10 +51,20 @@ class SignalGenerator {
       break;
     case 5:
       prepVideoMode();
-    break;
+      break;
+    case 6:
+      // an adjustable sine wave
+      sgOutput = sineWave(dataLen, 64, 1000);
+      SENSOR_PIXELS = sgOutput.length;
+      break;
+    case 7:
+      // a one cycle sine wave
+      sgOutput = oneCycleSineWave(64, 1000);
+      SENSOR_PIXELS = sgOutput.length;
+      break;
     default:
       // hard-coded sensor data containing a shadow edge profile
-      sgOutput = SG1.setHardCodedSensorData(); 
+      sgOutput = SG1.hardCodedSensorData(); 
       SENSOR_PIXELS = sgOutput.length;
     }
     println("SENSOR_PIXELS = " + SENSOR_PIXELS);
@@ -77,7 +87,7 @@ class SignalGenerator {
     return rdOut;
   }
 
-  int[] setHardCodedSensorData() {
+  int[] hardCodedSensorData() {
 
     int len = 64;
 
@@ -150,7 +160,7 @@ class SignalGenerator {
     return data;
   }
 
-  int[] setInputSingleImpulse(int dataLength, int multY, int pulseWidth, boolean positivePolarity) {
+  int[] singleImpulse(int dataLength, int multY, int pulseWidth, boolean positivePolarity) {
 
     if (pulseWidth < 2) {
       pulseWidth = 2;
@@ -186,7 +196,7 @@ class SignalGenerator {
     return data;
   }
 
-  int[] setInputSquareWave(int dataLength, int wavelength, int multY) {
+  int[] squareWave(int dataLength, int wavelength, int multY) {
 
     double sinPoint = 0;
     double squarePoint = 0;
@@ -194,10 +204,37 @@ class SignalGenerator {
 
     for (int i = 0; i < data.length; i++)
     {
-      sinPoint = Math.sin(2 * Math.PI * i/wavelength);
+      sinPoint = Math.sin((TWO_PI * i) / wavelength);
       squarePoint = Math.signum(sinPoint);
       //println(squarePoint);
       data[i] =(int)(squarePoint) * multY;
+    }
+    return data;
+  }
+  
+  int[] sineWave(int dataLength, int wavelength, int multY) {
+    
+    double sinPoint = 0;
+    int data[] = new int[dataLength];
+    
+    for (int i = 0; i < data.length; i++)
+    {
+      sinPoint = Math.sin((TWO_PI * i) / wavelength);
+      data[i] =(int)((sinPoint) * multY);
+      //println("data[" + i + "]  = " + data[i]);
+    }
+    return data;
+  }
+    int[] oneCycleSineWave(int dataLength, int multY) {
+    
+    double sinPoint = 0;
+    int data[] = new int[dataLength];
+    
+    for (int i = 0; i < data.length; i++)
+    {
+      sinPoint = Math.sin((TWO_PI * i) / dataLength);
+      data[i] =(int)((sinPoint) * multY);
+      //println("data[" + i + "]  = " + data[i]);
     }
     return data;
   }

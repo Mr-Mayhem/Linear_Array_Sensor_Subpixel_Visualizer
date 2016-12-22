@@ -72,11 +72,6 @@ class dataPlot { //<>//
   float ScreenCenX;           // holds screen X coordinate for the center subpixel position
   float ScreenPosX;           // holds screen X coordinate for the positive peak subpixel position
 
-  float YCoord;              // temporary variable for holding a screen Y coordinate
-
-  int XCoordint;              // temporary variable for holding a screen X coordinate
-  int YCoordint;              // temporary variable for holding a screen Y coordinate
-
   int markSize;               // diameter of drawn subpixel marker circles
   int subpixelMarkerLen;      // length of vertical lines which indicate subpixel peaks and shadow center location
   int movingAverageKernalSize; // Length of moving average filter used to smooth subpixel output
@@ -222,7 +217,7 @@ class dataPlot { //<>//
 
     wDataStartPos = 0;
     wDataStopPos = dpDataLen;
-
+    
     //wDataStartPos = constrain(wDataStartPos, 0, dpDataLen);
     //wDataStopPos = constrain(wDataStopPos, 0, dpDataLen);
 
@@ -279,7 +274,7 @@ class dataPlot { //<>//
     subpixelCalc(); // Subpixel calculations  
 
     calcWaterfall(width, imageHeight);
-    image(img, 0, height-imageHeight-125);
+    image(img, 0, height-imageHeight);
     
     fill(255);
     text("Use mouse to drag, mouse wheel to zoom", HALF_SCREEN_WIDTH-150, 60);
@@ -288,7 +283,7 @@ class dataPlot { //<>//
       "  scale_x: " + String.format("%.3f", scale_x), 
       50, 50);
 
-    // draw grid, legend, and kernel
+    // draw Grid, Legend and Kernel
     //Grid1.drawGrid(SCREEN_WIDTH, SCREEN_HEIGHT, 32/scale_x);
 
     drawGrid2(pan_x, (wDataStopPos * scale_x) + pan_x, 0, height + pan_y, 64 * scale_x, 256 * scale_y);
@@ -675,19 +670,17 @@ class dataPlot { //<>//
       ellipse(((posPeakLoc - shiftSumX - 0) * scale_x) + pan_x, (HALF_SCREEN_HEIGHT - (posPeakCenterPixel * scale_y)), markSize, markSize);
       ellipse(((posPeakLoc - shiftSumX + 1) * scale_x) + pan_x, (HALF_SCREEN_HEIGHT - (posPeakRightPixel * scale_y)), markSize, markSize);
 
-      YCoord = SCREEN_HEIGHT - 40;
       fill(255);
       textSize(14);
-      text("neg Peak Location: " + negPeakLoc, HALF_SCREEN_WIDTH - 600, YCoord);
-      text("pos Peak Location: " + posPeakLoc, HALF_SCREEN_WIDTH - 400, YCoord);
-      text("neg SubPixel Location: " + String.format("%.3f", negPeakSubPixelLoc), HALF_SCREEN_WIDTH + 150, YCoord);
-      text("pos SubPixel Location: " + String.format("%.3f", posPeakSubPixelLoc), HALF_SCREEN_WIDTH + 425, YCoord);
-
-      YCoord += 20;
-      text("Subpixel Width: " + String.format("%.3f", preciseWidth), HALF_SCREEN_WIDTH - 600, YCoord);
-      text("Subpixel Center Position = " + String.format("%.3f", precisePosLowPass), HALF_SCREEN_WIDTH - 400, YCoord);
-      text("Width in mm: " + String.format("%.5f", preciseWidthMM), HALF_SCREEN_WIDTH + 150, YCoord);
-      text("Position in mm: " + String.format("%.5f", preciseMMPos), HALF_SCREEN_WIDTH + 425, YCoord);
+      text("neg Peak Location: " + negPeakLoc, 10, height-280);
+      text("pos SubPixel Location: " + String.format("%.3f", posPeakSubPixelLoc), 10, height-260);
+      text("pos Peak Location: " + posPeakLoc, 10, height-240);
+      text("neg SubPixel Location: " + String.format("%.3f", negPeakSubPixelLoc), 10, height-220);
+     
+      text("Subpixel Width: " + String.format("%.3f", preciseWidth), 10, height-200);
+      text("Width in mm: " + String.format("%.5f", preciseWidthMM), 10, height-180);
+      text("Subpixel Center Position = " + String.format("%.3f", precisePosLowPass), 10, height-160);
+      text("Center Position in mm: " + String.format("%.5f", preciseMMPos), 10, height-140);
     }
   }
 
