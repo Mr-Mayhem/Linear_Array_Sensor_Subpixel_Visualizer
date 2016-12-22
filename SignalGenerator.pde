@@ -59,7 +59,7 @@ class SignalGenerator {
       break;
     case 7:
       // a one cycle sine wave
-      sgOutput = oneCycleSineWave(64, 1000);
+      sgOutput = oneCycleSineWaveIntegers(64, 1000);
       SENSOR_PIXELS = sgOutput.length;
       break;
     default:
@@ -225,7 +225,7 @@ class SignalGenerator {
     }
     return data;
   }
-    int[] oneCycleSineWave(int dataLength, int multY) {
+    int[] oneCycleSineWaveIntegers(int dataLength, int multY) {
     
     double sinPoint = 0;
     int data[] = new int[dataLength];
@@ -234,6 +234,19 @@ class SignalGenerator {
     {
       sinPoint = Math.sin((TWO_PI * i) / dataLength);
       data[i] =(int)((sinPoint) * multY);
+      //println("data[" + i + "]  = " + data[i]);
+    }
+    return data;
+  }
+   float[] oneCycleSineWaveFloats(int dataLength, int multY) {
+
+    double sinPoint = 0;
+    float data[] = new float[dataLength];
+    
+    for (int i = 0; i < data.length; i++)
+    {
+      sinPoint = Math.sin((TWO_PI * i) / dataLength);
+      data[i] =(float)((sinPoint) * multY);
       //println("data[" + i + "]  = " + data[i]);
     }
     return data;

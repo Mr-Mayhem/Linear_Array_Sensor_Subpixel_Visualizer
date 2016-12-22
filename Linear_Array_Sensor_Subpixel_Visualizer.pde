@@ -109,6 +109,7 @@ byte[] byteArray = new byte[0];      // array of raw serial data bytes
 int[] sigGenOutput = new int[0];     // array for signal generator output
 float[] kernel = new float[0];       // array for impulse response, or kernel
 int videoArray[] = new int[0];       // holds one row of video data, a row of integer pixels copied from the video image
+float[] sineArray = new float[0];    // holds a one cycle sine wave, used to modulate Signal Generator output X axis
 // ==============================================================================================
 // Global Variables:
 
@@ -145,13 +146,28 @@ Capture video;       // create video capture object named video
 void setup() {
   // Set the data & screen scaling:
   // You are encouraged to adjust these, especially to 'zoom in' to the shadow location see the subpixel details better.
+  
+  // the data length times the number of pixels per data point
+  SCREEN_WIDTH = 1280;
+  HALF_SCREEN_WIDTH = SCREEN_WIDTH / 2;
 
   // sets screen height relative to the highest ADC value, greater values increases screen height
   SCREEN_HEIGHT = 700; 
 
   // leave alone! Used in many places to center data at middle height
   HALF_SCREEN_HEIGHT = SCREEN_HEIGHT / 2;
-
+  
+  // set the screen dimensions
+  surface.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);
+  
+  // set framerate() a little above where increases don't speed it up much.
+  // Also note, for highest speed, comment out drawing plots you don't care about.
+  frameRate(500);
+  background(0);
+  strokeWeight(1);
+  println("SCREEN_WIDTH: " + SCREEN_WIDTH);
+  println("SCREEN_HEIGHT: " + SCREEN_HEIGHT);
+  
   // ============================================================================================
   kernelSource = 0; // <<< <<< Choose a kernel source (0 = dynamically created gaussian):
   // Create a kernelGenerator object, which creates a kernel and saves it's data into an array
@@ -168,26 +184,12 @@ void setup() {
   // Create a dataPlot object, which plots data and provides mouse sliding and zooming ability
   SG1 = new SignalGenerator();
   sigGenOutput = SG1.signalGeneratorOutput(signalSource, 256, 1000); // data source, num of data points, height of peaks
-
-  // the data length times the number of pixels per data point
-  SCREEN_WIDTH = 1280;
-  HALF_SCREEN_WIDTH = SCREEN_WIDTH / 2;
-
-  // set the screen dimensions
-  surface.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);
+  sineArray = SG1.oneCycleSineWaveFloats(64, 10); // values used to move x to and fro as "modulation"
   
   // Create the dataPlot object, which handles plotting data with mouse sliding and zooming ability
   // dataStop set not past SENSOR_PIXELS, rather than SENSOR_PIXELS + KERNEL_LENGTH, to prevent convolution garbage at end 
   // from partial kernel immersion
   DP1 = new dataPlot(this, 0, 0, SCREEN_WIDTH, HALF_SCREEN_HEIGHT, SENSOR_PIXELS); 
-
-  // set framerate() a little above where increases don't speed it up much.
-  // Also note, for highest speed, comment out drawing plots you don't care about.
-  frameRate(500);
-  background(0);
-  strokeWeight(1);
-  println("SCREEN_WIDTH: " + SCREEN_WIDTH);
-  println("SCREEN_HEIGHT: " + SCREEN_HEIGHT);
 
   if (signalSource == 3) {
     noLoop();

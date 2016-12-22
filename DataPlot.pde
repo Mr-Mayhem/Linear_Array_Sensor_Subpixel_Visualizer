@@ -30,6 +30,8 @@ class dataPlot { //<>//
   float drawPtrX;             // phase correction drawing pointers
   float drawPtrXLessK;
   float drawPtrXLessKlessD1;
+  int modulationIndex;        // index to index through the modulation waveform
+  float modulationX;          // added to x axis of data to simulate left right movement
 
   // =============================================================================================
 
@@ -97,7 +99,8 @@ class dataPlot { //<>//
   float[] output = new float[0]; 
 
   // array which feeds the waterfall display
-  int[] waterfallTop = new int[0]; 
+  int[] waterfallTop = new int[0];
+  
   // =============================================================================================
 
   Legend Legend1;             // One Legend object, lists the colors and what they represent
@@ -138,7 +141,7 @@ class dataPlot { //<>//
     // arrays for output signals, get resized after kernel size is known
     output = new float[KERNEL_LENGTH];
     waterfallTop = new int[width+1];  // feeds the waterfall display
-
+    
     // used for generating smooth noise for original data; lower values are smoother noise
     noiseInput = 0.1;
 
@@ -160,7 +163,7 @@ class dataPlot { //<>//
       cameraImage = createImage(640, 60, RGB);
     }
     movingAverageKernalSize = 7; // use odd size for even integer offset
-    F1 = new MovingAverageFilter(movingAverageKernalSize);
+    F1 = new MovingAverageFilter(movingAverageKernalSize); // used to smooth the subpixel center position output
   }
 
   boolean overKernel() {
@@ -214,18 +217,24 @@ class dataPlot { //<>//
 
     // The minimum number of input data samples is two times the kernel length + 1,  which results in 
     // the minumum of only one sample processed. (we ignore the fist and last data by one kernel's width)
-
+    
+    modulationIndex++; // add a tenth of a pixel
+    if (modulationIndex > sineArray.length-1){
+      modulationIndex = 0;
+    }
+    modulationX = sineArray[modulationIndex]; // value added to x to modulate x axis of original data
+    
     wDataStartPos = 0;
     wDataStopPos = dpDataLen;
     
     //wDataStartPos = constrain(wDataStartPos, 0, dpDataLen);
     //wDataStopPos = constrain(wDataStopPos, 0, dpDataLen);
-
+    
     if (signalSource == 3) {
-      // Plot using Serial data, remember to plug in Teensy 3.6 usb programming cable and that sister sketch is running
+      // Plot using Serial data, remember to plug in Teensy 3.6 via usb programming cable and that sister sketch is running
       processSerialData();          // from 0 to SENSOR_PIXELS-1
     } else if (signalSource == 5) { 
-      // Plot using Video data, make sure at least one camera is running, resolution default set to 640 x 480
+      // Plot using Video data, make sure at least one camera is connected and enabled, resolution default set to 640 x 480
       video.loadPixels();
       cameraImage.loadPixels();
       wDataStartPos = 0;
