@@ -224,7 +224,7 @@ class dataPlot { //<>//
     scale_y = PanZoomPlot.getScaleY();
     
     // Grid1.drawGrid(SCREEN_WIDTH, SCREEN_HEIGHT, 32/scale_x);
-    drawGrid2(pan_x, (wDataStopPos * scale_x) + pan_x, 0, height + pan_y, 64 * scale_x, 256 * scale_y);
+    drawGrid2(pan_x, (wDataStopPos * scale_x) + pan_x, 0, height + pan_y, 32 * scale_x, 256 * scale_y);
     
     // The minimum number of input data samples is two times the kernel length + 1,  which results in 
     // the minumum of only one sample processed. (we ignore the fist and last data by one kernel's width)
