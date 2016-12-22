@@ -173,14 +173,14 @@ void setup() {
   kernelSource = 0; // <<< <<< Choose a kernel source (0 = dynamically created gaussian "bell curve"):
   // Create a kernelGenerator object, which creates a kernel and saves it's data into an array
   // 0: dynamically created gaussian 
-  // 1: hard-coded gaussuan (manually typed into array values)
+  // 1: hard-coded gaussuan (manually typed array values)
   // 2: laplacian of gaussian (LOG) just to see what happens. Some laser subpixel papers like it, but experimental, not conventional;
   KG1 = new KernelGenerator(1.4);
   KG1.setKernelSource(kernelSource);
   // ============================================================================================
   // You are encouraged to try different signal sources to feed the system
   signalSource = 0;  // <<< <<< Choose a signal source; 
-  // 0: manually entered array data
+  // 0: manually typed array data
   // 1: square impulse
   // 2: square wave 
   // 3: serial data from linear photodiode array sensor, use with sister Teensy 3.6 arduino sketch
