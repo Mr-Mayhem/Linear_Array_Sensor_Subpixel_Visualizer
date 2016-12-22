@@ -125,9 +125,9 @@ int KERNEL_LENGTH_MINUS1;            // kernel length minus 1, used to reduce ma
 int HALF_KERNEL_LENGTH;              // Half the kernel length, used to correct convoltion phase shift
 int bytesRead;                       // number of bytes actually read out from the serial buffer
 int availableBytesDraw;              // used to show the number of bytes present in the serial buffer
-
+int gtextSize;                       // sizes all text, consumed by this page, dataplot class, legend class
 // used to count sensor data frames
-int chartRedraws = 0;
+int chartRedraws = 0; 
 
 // width
 int SCREEN_WIDTH;                    // screen width
@@ -159,12 +159,13 @@ void setup() {
   
   // set the screen dimensions
   surface.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);
-  
+  gtextSize = 12; // sizes all text, consumed by this page, dataplot class, legend class to space text y using this value plus padding
   // set framerate() a little above where increases don't speed it up much.
   // Also note, for highest speed, comment out drawing plots you don't care about.
   frameRate(500);
   background(0);
   strokeWeight(1);
+  textSize(gtextSize);
   println("SCREEN_WIDTH: " + SCREEN_WIDTH);
   println("SCREEN_HEIGHT: " + SCREEN_HEIGHT);
   
@@ -195,7 +196,7 @@ void setup() {
   // Create the dataPlot object, which handles plotting data with mouse sliding and zooming ability
   // dataStop set not past SENSOR_PIXELS, rather than SENSOR_PIXELS + KERNEL_LENGTH, to prevent convolution garbage at end 
   // from partial kernel immersion
-  DP1 = new dataPlot(this, 0, 0, SCREEN_WIDTH, HALF_SCREEN_HEIGHT, SENSOR_PIXELS); 
+  DP1 = new dataPlot(this, 0, 0, SCREEN_WIDTH, HALF_SCREEN_HEIGHT, SENSOR_PIXELS, gtextSize); 
   DP1.modulateX = true; // set to false to stop the simulated left to right data movement on simulated data (wobbling)
   if (signalSource == 3) {
     noLoop();

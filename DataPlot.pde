@@ -1,12 +1,14 @@
 class dataPlot { //<>//
   // by Douglas Mayhew 12/1/2016
   // Plots data and provides mouse sliding and zooming ability
-
+  
   int dpXpos;                 // dataPlot class init variables
   int dpYpos;
   int dpWidth;
   int dpHeight;
   int dpDataLen;
+  int dpTextSize;
+  int dptextSizePlus2;
 
   float input;                // convolution input y value
   float cOutPrev;             // the previous convolution output y value
@@ -35,6 +37,7 @@ class dataPlot { //<>//
   int modulationIndex;        // index to index through the modulation waveform
   float modulationX;          // added to x axis of data to simulate left right movement
   float lerpX;                // new y value in between adjacent x's, used to shift data in input array
+  int offsetY;                // temp variable to offset the y position (the height) of text
   // =============================================================================================
 
   // Subpixel Variables
@@ -111,14 +114,16 @@ class dataPlot { //<>//
   PanZoomX PanZoomPlot;       // pan/zoom object to control pan & zoom of main data plot
   MovingAverageFilter F1;     // filters the subpixel output data
 
-  dataPlot (PApplet p, int plotXpos, int plotYpos, int plotWidth, int plotHeight, int plotDataLen) {
+  dataPlot (PApplet p, int plotXpos, int plotYpos, int plotWidth, int plotHeight, int plotDataLen, int TextSize) {
 
     dpXpos = plotXpos;
     dpYpos = plotYpos;
     dpWidth = plotWidth;
     dpHeight = plotHeight;
     dpDataLen = plotDataLen;
-
+    dpTextSize = TextSize;
+    dptextSizePlus2 = dpTextSize + 2;
+    
     PanZoomPlot = new PanZoomX(p, plotDataLen);   // Create PanZoom object to pan & zoom the main data plot
 
     pan_x = PanZoomPlot.getPanX();  // initial pan and zoom values
@@ -152,13 +157,13 @@ class dataPlot { //<>//
     noiseIncrement = noiseInput;
 
     // create the Legend object, which lists the colors and what they represent
-    Legend1 = new Legend(); 
+    Legend1 = new Legend(dpTextSize); 
 
     // create the Grid object, which draws a grid
     Grid1 = new Grid();
 
     imageWidth = width;
-    imageHeight = height/5;
+    imageHeight = height/4;
 
     // init the waterfall image
     img = createImage(width, imageHeight, RGB);
@@ -275,12 +280,9 @@ class dataPlot { //<>//
         }
       }
       
-      //arrayCopy(video.pixels, cameraImage.pixels);
       cameraImage.updatePixels();
-      //image( img, x, y, width, height); 
       float x = (cameraImage.width * scale_x);
       image(cameraImage, pan_x, 30, x, cameraImage.height);
-      //set(0, 60, video);
 
       processVideoData();
     } else {      // Plot using Simulated Data
@@ -294,16 +296,19 @@ class dataPlot { //<>//
 
     subpixelCalc(); // Subpixel calculations  
 
-    calcWaterfall(width, imageHeight);
-    image(img, 0, height-imageHeight);
+    waterfall(width, imageHeight);
     
     fill(255);
-    text("Use mouse to drag, mouse wheel to zoom", HALF_SCREEN_WIDTH-150, 60);
+    
+    offsetY = 45;
 
-    text("pan_x: " + String.format("%.3f", pan_x) + 
-      "  scale_x: " + String.format("%.3f", scale_x), 
-      50, 50);
-
+    textAlign(CENTER);
+    text("Use mouse to drag, mouse wheel to zoom", HALF_SCREEN_WIDTH, offsetY);
+    
+    offsetY += dptextSizePlus2;
+    text("pan_x: " + String.format("%.3f", pan_x) + "  scale_x: " + String.format("%.3f", scale_x), HALF_SCREEN_WIDTH, offsetY);
+    textAlign(LEFT);
+    
     // draw Legend and Kernel
     // Counts 1 to 60 and repeats, to provide a sense of the frame rate
     fill(255);
@@ -327,9 +332,16 @@ class dataPlot { //<>//
     }
 
     fill(255);
-    text("Use mouse wheel here to adjust kernel", HALF_SCREEN_WIDTH-135, (SCREEN_HEIGHT-50));
-    text("Kernel Sigma: " + String.format("%.1f", sigma), HALF_SCREEN_WIDTH-60, (SCREEN_HEIGHT-30));
-    text("Kernel Length: " + KERNEL_LENGTH, HALF_SCREEN_WIDTH-60, (SCREEN_HEIGHT-10));
+    offsetY = SCREEN_HEIGHT-10;
+    textAlign(CENTER);
+    text("Use mouse wheel here to adjust kernel", HALF_SCREEN_WIDTH, offsetY);
+    
+    offsetY -= dptextSizePlus2;
+    text("Kernel Sigma: " + String.format("%.1f", sigma), HALF_SCREEN_WIDTH, offsetY);
+    
+    offsetY -= dptextSizePlus2;
+    text("Kernel Length: " + KERNEL_LENGTH, HALF_SCREEN_WIDTH, offsetY);
+    textAlign(LEFT);
   }
 
   void processSerialData() {
@@ -692,18 +704,7 @@ class dataPlot { //<>//
       ellipse(((posPeakLoc - shiftSumX - 1) * scale_x) + pan_x, (HALF_SCREEN_HEIGHT - (posPeakLeftPixel * scale_y)), markSize, markSize);
       ellipse(((posPeakLoc - shiftSumX - 0) * scale_x) + pan_x, (HALF_SCREEN_HEIGHT - (posPeakCenterPixel * scale_y)), markSize, markSize);
       ellipse(((posPeakLoc - shiftSumX + 1) * scale_x) + pan_x, (HALF_SCREEN_HEIGHT - (posPeakRightPixel * scale_y)), markSize, markSize);
-
-      fill(255);
-      textSize(14);
-      text("neg Peak Location: " + negPeakLoc, 10, height-300);
-      text("pos SubPixel Location: " + String.format("%.3f", posPeakSubPixelLoc), 10, height-280);
-      text("pos Peak Location: " + posPeakLoc, 10, height-260);
-      text("neg SubPixel Location: " + String.format("%.3f", negPeakSubPixelLoc), 10, height-240);
-     
-      text("Subpixel Width: " + String.format("%.3f", preciseWidth), 10, height-220);
-      text("Width in mm: " + String.format("%.5f", preciseWidthMM), 10, height-200);
-      text("Subpixel Center Position = " + String.format("%.3f", precisePosLowPass), 10, height-180);
-      text("Center Position in mm: " + String.format("%.5f", preciseMMPos), 10, height-160);
+      
     }
   }
 
@@ -731,7 +732,7 @@ class dataPlot { //<>//
     rect(x, y, scale_x, 9);
   }
 
-  void calcWaterfall(int wWidth, int wHeight) {
+  void waterfall(int wWidth, int wHeight) {
 
     img.loadPixels();
 
@@ -749,7 +750,37 @@ class dataPlot { //<>//
         img.pixels[setPixelIndex] = img.pixels[getPixelIndex];
       }
     }
+    
     img.updatePixels();
+    
+    image(img, 0, height-imageHeight); // show the waterfall image prior to writing the subpixel text so the text is on top
+    
+    // print the text for the subpixel output values
+    offsetY = height-10;
+    
+    fill(255);
+    text("neg Peak Location: " + negPeakLoc, 10, offsetY);
+    
+    offsetY -= dptextSizePlus2;
+    text("pos SubPixel Location: " + String.format("%.3f", posPeakSubPixelLoc), 10, offsetY);
+    
+    offsetY -= dptextSizePlus2;
+    text("pos Peak Location: " + posPeakLoc, 10, offsetY);
+    
+    offsetY -= dptextSizePlus2;
+    text("neg SubPixel Location: " + String.format("%.3f", negPeakSubPixelLoc), 10, offsetY);
+    
+    offsetY -= dptextSizePlus2;
+    text("Subpixel Width: " + String.format("%.3f", preciseWidth), 10, offsetY);
+    
+    offsetY -= dptextSizePlus2;
+    text("Width in mm: " + String.format("%.5f", preciseWidthMM), 10, offsetY);
+    
+    offsetY -= dptextSizePlus2;
+    text("Subpixel Center Position = " + String.format("%.3f", precisePosLowPass), 10, offsetY);
+    
+    offsetY -= dptextSizePlus2;
+    text("Center Position in mm: " + String.format("%.5f", preciseMMPos), 10, offsetY);
   }
 
   int[] perlinNoiseColor(int multY, int dataLen) {

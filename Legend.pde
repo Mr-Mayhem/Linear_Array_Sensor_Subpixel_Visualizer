@@ -1,8 +1,10 @@
 class Legend {
   // by Douglas Mayhew 12/1/2016
   // This class draws the legend
-
-  Legend () {
+  int textSizePlus2;
+  
+  Legend (int textSize) {
+      textSizePlus2 = textSize + 2;
   }
 
   void drawLegend() {
@@ -23,21 +25,21 @@ class Legend {
     fill(255);
     text("Original input data", rectX + 20, rectY + 10);
 
-    rectY += 20;
+    rectY += textSizePlus2;
     stroke(COLOR_KERNEL_DATA);
     fill(COLOR_KERNEL_DATA);
     rect(rectX, rectY, rectWidth, rectHeight);
     fill(255);
     text("Convolution kernel", rectX + 20, rectY + 10);
 
-    rectY += 20;
+    rectY += textSizePlus2;
     stroke(COLOR_OUTPUT_DATA);
     fill(COLOR_OUTPUT_DATA);
     rect(rectX, rectY, rectWidth, rectHeight);
     fill(255);
     text("Smoothed convolution output data", rectX + 20, rectY + 10);
 
-    rectY += 20;
+    rectY += textSizePlus2;
     stroke(COLOR_FIRST_DIFFERENCE);
     fill(COLOR_FIRST_DIFFERENCE);
     rect(rectX, rectY, rectWidth, rectHeight);
