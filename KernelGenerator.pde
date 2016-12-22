@@ -171,5 +171,5 @@ class KernelGenerator {
   //  //println("KERNEL_LENGTH: " + KERNEL_LENGTH);
   //  return fkernel;
   //}
-}
+  }
 //

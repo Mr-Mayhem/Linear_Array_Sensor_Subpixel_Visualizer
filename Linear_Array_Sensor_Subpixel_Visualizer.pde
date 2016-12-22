@@ -175,22 +175,28 @@ void setup() {
   KG1 = new KernelGenerator();
   KG1.setKernelSource(kernelSource);
   // ============================================================================================
-  signalSource = 0;  // <<< <<< Choose a signal source, 0 = raw data, 1 square pulse, 2 square wave, 
-  // 3 serial data, 5 center height line grab from a video camera.
-  // You are encouraged to try different signal sources, to see how the subpixel code behaves with 
-  // nearly perfect waveforms
+  // You are encouraged to try different signal sources to feed the system
+  signalSource = 0;  // <<< <<< Choose a signal source; 
+  // 0: manually entered array data
+  // 1: square impulse
+  // 2: square wave 
+  // 3: serial data from linear photodiode array sensor, use with sister Teensy 3.6 arduino sketch
+  // 4: random perlin noise
+  // 5: center height line grab from your video camera
+  // 6: sine wave
+  // 7: one cycle sine wave
   // =============================================================================================
-
+   
   // Create a dataPlot object, which plots data and provides mouse sliding and zooming ability
   SG1 = new SignalGenerator();
   sigGenOutput = SG1.signalGeneratorOutput(signalSource, 256, 1000); // data source, num of data points, height of peaks
-  sineArray = SG1.oneCycleSineWaveFloats(64, 10); // values used to move x to and fro as "modulation"
+  sineArray = SG1.oneCycleSineWaveFloats(256); // values used to move x to and fro as "modulation"
   
   // Create the dataPlot object, which handles plotting data with mouse sliding and zooming ability
   // dataStop set not past SENSOR_PIXELS, rather than SENSOR_PIXELS + KERNEL_LENGTH, to prevent convolution garbage at end 
   // from partial kernel immersion
   DP1 = new dataPlot(this, 0, 0, SCREEN_WIDTH, HALF_SCREEN_HEIGHT, SENSOR_PIXELS); 
-
+  DP1.modulateX = true; // set to false to stop the simulated left to right data movement on simulated data (wobbling)
   if (signalSource == 3) {
     noLoop();
     // Set up serial connection

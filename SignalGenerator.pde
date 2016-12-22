@@ -93,32 +93,32 @@ class SignalGenerator {
 
     int[] data = new int[len];
 
-    data[0] = 1000;
-    data[1] = 1000;
-    data[2] = 1000;
-    data[3] = 1000;
-    data[4] = 1000;
-    data[5] = 1000;
-    data[6] = 1000;
-    data[7] = 1000;
-    data[8] = 1000;
-    data[9] = 1000;
-    data[10] = 1000;
-    data[11] = 1000;
-    data[12] = 1000;
-    data[13] = 1000;
-    data[14] = 1000;
-    data[15] = 1000;
-    data[16] = 1000;
-    data[17] = 1000;
-    data[18] = 1000;
-    data[19] = 1000;
-    data[20] = 1000;
-    data[21] = 1000;
-    data[22] = 1000;
-    data[23] = 1000;
-    data[24] = 1000;
-    data[25] = 1000;
+    data[0] = 1500;
+    data[1] = 1500;
+    data[2] = 1500;
+    data[3] = 1500;
+    data[4] = 1500;
+    data[5] = 1500;
+    data[6] = 1500;
+    data[7] = 1500;
+    data[8] = 1500;
+    data[9] = 1500;
+    data[10] = 1500;
+    data[11] = 1500;
+    data[12] = 1500;
+    data[13] = 1500;
+    data[14] = 1500;
+    data[15] = 1500;
+    data[16] = 1500;
+    data[17] = 1500;
+    data[18] = 1500;
+    data[19] = 1500;
+    data[20] = 1500;
+    data[21] = 1500;
+    data[22] = 1500;
+    data[23] = 1500;
+    data[24] = 1500;
+    data[25] = 1500;
     data[26] = 200; // 
     data[27] = 200;
     data[28] = 200;
@@ -131,32 +131,32 @@ class SignalGenerator {
     data[35] = 200;
     data[36] = 200;
     data[37] = 200; //
-    data[38] = 1000;
-    data[39] = 1000;
-    data[40] = 1000;
-    data[41] = 1000;
-    data[42] = 1000;
-    data[43] = 1000;
-    data[44] = 1000;
-    data[45] = 1000;
-    data[46] = 1000;
-    data[47] = 1000;
-    data[48] = 1000;
-    data[49] = 1000;
-    data[50] = 1000;
-    data[51] = 1000;
-    data[52] = 1000;
-    data[53] = 1000;
-    data[54] = 1000;
-    data[55] = 1000;
-    data[56] = 1000;
-    data[57] = 1000;
-    data[58] = 1000;
-    data[59] = 1000;
-    data[60] = 1000;
-    data[61] = 1000;
-    data[62] = 1000;
-    data[63] = 1000;
+    data[38] = 1500;
+    data[39] = 1500;
+    data[40] = 1500;
+    data[41] = 1500;
+    data[42] = 1500;
+    data[43] = 1500;
+    data[44] = 1500;
+    data[45] = 1500;
+    data[46] = 1500;
+    data[47] = 1500;
+    data[48] = 1500;
+    data[49] = 1500;
+    data[50] = 1500;
+    data[51] = 1500;
+    data[52] = 1500;
+    data[53] = 1500;
+    data[54] = 1500;
+    data[55] = 1500;
+    data[56] = 1500;
+    data[57] = 1500;
+    data[58] = 1500;
+    data[59] = 1500;
+    data[60] = 1500;
+    data[61] = 1500;
+    data[62] = 1500;
+    data[63] = 1500;
     return data;
   }
 
@@ -238,7 +238,8 @@ class SignalGenerator {
     }
     return data;
   }
-   float[] oneCycleSineWaveFloats(int dataLength, int multY) {
+  
+   float[] oneCycleSineWaveFloats(int dataLength) {
 
     double sinPoint = 0;
     float data[] = new float[dataLength];
@@ -246,7 +247,7 @@ class SignalGenerator {
     for (int i = 0; i < data.length; i++)
     {
       sinPoint = Math.sin((TWO_PI * i) / dataLength);
-      data[i] =(float)((sinPoint) * multY);
+      data[i] =(float)((sinPoint) * 0.5) + 0.5;
       //println("data[" + i + "]  = " + data[i]);
     }
     return data;

@@ -8,7 +8,7 @@ class dataPlot { //<>//
   int dpHeight;
   int dpDataLen;
 
-  int input;                  // convolution input y value
+  float input;                // convolution input y value
   float cOutPrev;             // the previous convolution output y value
   float cOut;                 // the current convolution output y value
 
@@ -30,9 +30,11 @@ class dataPlot { //<>//
   float drawPtrX;             // phase correction drawing pointers
   float drawPtrXLessK;
   float drawPtrXLessKlessD1;
+  
+  boolean modulateX;          // toggles the modulation on and off
   int modulationIndex;        // index to index through the modulation waveform
   float modulationX;          // added to x axis of data to simulate left right movement
-
+  float lerpX;                // new y value in between adjacent x's, used to shift data in input array
   // =============================================================================================
 
   // Subpixel Variables
@@ -77,6 +79,7 @@ class dataPlot { //<>//
   int markSize;               // diameter of drawn subpixel marker circles
   int subpixelMarkerLen;      // length of vertical lines which indicate subpixel peaks and shadow center location
   int movingAverageKernalSize; // Length of moving average filter used to smooth subpixel output
+  
   // =============================================================================================
   // Waterfall variables
   float noiseInput;     // used for generating smooth noise for original data; lower values are smoother noise
@@ -214,15 +217,18 @@ class dataPlot { //<>//
     scale_x = PanZoomPlot.getScaleX();
     pan_y = PanZoomPlot.getPanY();
     scale_y = PanZoomPlot.getScaleY();
-
+    
+    // Grid1.drawGrid(SCREEN_WIDTH, SCREEN_HEIGHT, 32/scale_x);
+    drawGrid2(pan_x, (wDataStopPos * scale_x) + pan_x, 0, height + pan_y, 64 * scale_x, 256 * scale_y);
+    
     // The minimum number of input data samples is two times the kernel length + 1,  which results in 
     // the minumum of only one sample processed. (we ignore the fist and last data by one kernel's width)
     
-    modulationIndex++; // add a tenth of a pixel
+    modulationIndex++; // increment the index to the sine wave array
     if (modulationIndex > sineArray.length-1){
       modulationIndex = 0;
     }
-    modulationX = sineArray[modulationIndex]; // value added to x to modulate x axis of original data
+    modulationX = sineArray[modulationIndex]; // value used to interpolate the data to simulate shadow movement
     
     wDataStartPos = 0;
     wDataStopPos = dpDataLen;
@@ -231,9 +237,12 @@ class dataPlot { //<>//
     //wDataStopPos = constrain(wDataStopPos, 0, dpDataLen);
     
     if (signalSource == 3) {
+      
       // Plot using Serial data, remember to plug in Teensy 3.6 via usb programming cable and that sister sketch is running
       processSerialData();          // from 0 to SENSOR_PIXELS-1
-    } else if (signalSource == 5) { 
+    
+  } else if (signalSource == 5) { 
+      
       // Plot using Video data, make sure at least one camera is connected and enabled, resolution default set to 640 x 480
       video.loadPixels();
       cameraImage.loadPixels();
@@ -265,6 +274,7 @@ class dataPlot { //<>//
           cameraImage.pixels[setPixelIndex] = video.pixels[getPixelIndex];
         }
       }
+      
       //arrayCopy(video.pixels, cameraImage.pixels);
       cameraImage.updatePixels();
       //image( img, x, y, width, height); 
@@ -274,9 +284,11 @@ class dataPlot { //<>//
 
       processVideoData();
     } else {      // Plot using Simulated Data
+      
       // Counts 1 to 60 and repeats, to provide a sense of the frame rate
       fill(255);
       text(chartRedraws, 10, 50);
+      
       processSignalGeneratorData(); // from 0 to SENSOR_PIXELS-1
     }
 
@@ -292,10 +304,7 @@ class dataPlot { //<>//
       "  scale_x: " + String.format("%.3f", scale_x), 
       50, 50);
 
-    // draw Grid, Legend and Kernel
-    //Grid1.drawGrid(SCREEN_WIDTH, SCREEN_HEIGHT, 32/scale_x);
-
-    drawGrid2(pan_x, (wDataStopPos * scale_x) + pan_x, 0, height + pan_y, 64 * scale_x, 256 * scale_y);
+    // draw Legend and Kernel
     // Counts 1 to 60 and repeats, to provide a sense of the frame rate
     fill(255);
     text(chartRedraws, 10, 50);
@@ -318,9 +327,9 @@ class dataPlot { //<>//
     }
 
     fill(255);
-    text("Use mouse wheel here to adjust kernel", HALF_SCREEN_WIDTH-130, (SCREEN_HEIGHT-50));
-    text("Kernel Sigma: " + String.format("%.1f", sigma), HALF_SCREEN_WIDTH-60, (SCREEN_HEIGHT-30));
-    text("Kernel Length: " + KERNEL_LENGTH, HALF_SCREEN_WIDTH-60, (SCREEN_HEIGHT-10));
+    text("Use mouse wheel here to adjust kernel", HALF_SCREEN_WIDTH-110, (SCREEN_HEIGHT-50));
+    text("Kernel Sigma: " + String.format("%.1f", sigma), HALF_SCREEN_WIDTH-40, (SCREEN_HEIGHT-30));
+    text("Kernel Length: " + KERNEL_LENGTH, HALF_SCREEN_WIDTH-40, (SCREEN_HEIGHT-10));
   }
 
   void processSerialData() {
@@ -375,56 +384,6 @@ class dataPlot { //<>//
     }
   }
 
-  void processSignalGeneratorData() {
-
-    int outerCount = 0;
-
-    negPeakLoc = wDataStopPos; // one past the last pixel, to prevent false positives?
-    posPeakLoc = wDataStopPos; // one past the last pixel, to prevent false positives?
-    negPeakVal = 0;
-    posPeakVal = 0;
-
-    // increment the outer loop pointer from wDataStartPos to wDataStopPos - 1
-    for (outerPtrX = wDataStartPos; outerPtrX < wDataStopPos; outerPtrX++) {
-      outerCount++; // lets us index (x axis) on the screen offset from outerPtrX
-
-      // Below we prepare 3 x shift correction indexes to reduce the math work.
-
-      // the outer pointer to the screen X axis (l)
-      drawPtrX = (outerCount * scale_x) + pan_x;
-
-      // shift left by half the kernel size to correct for convolution shift (dead-on correct for odd-size kernels)
-      drawPtrXLessK = ((outerCount - HALF_KERNEL_LENGTH) * scale_x) + pan_x; 
-
-      // same as above, but shift left additional 0.5 to properly place the difference point in-between it's parents
-      drawPtrXLessKlessD1 = (((outerCount - HALF_KERNEL_LENGTH) - 0.5) * scale_x) + pan_x;
-
-      // copy one data value from the signal generator output array:
-      input = sigGenOutput[outerPtrX];
-
-      // plot original data value
-      stroke(COLOR_ORIGINAL_DATA);
-
-      point(drawPtrX, HALF_SCREEN_HEIGHT - (input * scale_y));
-      // draw section of greyscale bar showing the 'color' of original data values
-      greyscaleBarMapped(drawPtrX, 0, input);
-
-      convolutionInnerLoop(); // Convolution Inner Loop
-
-      if (outerCount > KERNEL_LENGTH_MINUS1) {  // Skip one kernel length of convolution output values, which are garbage.
-        // plot the output data value
-        stroke(COLOR_OUTPUT_DATA);
-        point(drawPtrXLessK, HALF_SCREEN_HEIGHT - (cOut * scale_y));
-        //println("output[" + outerPtrX + "]" +output[outerPtrX]);
-
-        // draw section of greyscale bar showing the 'color' of output data values
-        greyscaleBarMapped(drawPtrXLessK, 10, cOut);
-
-        find1stDiffPeaks();
-      }
-    }
-  }
-
   void processVideoData() {
 
     int outerCount = 0;
@@ -451,7 +410,7 @@ class dataPlot { //<>//
 
       // copy one data value from the video array, which contains a row of color video integers
       // convert color pixel to greyscale, and multiply by 8 to bring the levels up. 
-      input = Pixelbrightness(videoArray[outerPtrX]) *8; // 3 camera values of 255 max = 765 * 8 = 6120, 13 bits about
+      input = Pixelbrightness(videoArray[outerPtrX]) * 8; // 3 camera values of 255 max = 765 * 8 = 6120, 13 bits about
 
       // plot original data value
       stroke(COLOR_ORIGINAL_DATA);
@@ -475,6 +434,61 @@ class dataPlot { //<>//
       }
     }
   }
+  
+  void processSignalGeneratorData() {
+
+    int outerCount = 0;
+
+    negPeakLoc = wDataStopPos; // one past the last pixel, to prevent false positives?
+    posPeakLoc = wDataStopPos; // one past the last pixel, to prevent false positives?
+    negPeakVal = 0;
+    posPeakVal = 0;
+
+    // increment the outer loop pointer from wDataStartPos to wDataStopPos - 1
+    for (outerPtrX = wDataStartPos; outerPtrX < wDataStopPos-1; outerPtrX++) {
+      outerCount++; // lets us index (x axis) on the screen offset from outerPtrX
+
+      // Below we prepare 3 x shift correction indexes to reduce the math work.
+
+      // the outer pointer to the screen X axis (l)
+      drawPtrX = (outerCount * scale_x) + pan_x;
+
+      // shift left by half the kernel size to correct for convolution shift (dead-on correct for odd-size kernels)
+      drawPtrXLessK = ((outerCount - HALF_KERNEL_LENGTH) * scale_x) + pan_x; 
+
+      // same as above, but shift left additional 0.5 to properly place the difference point in-between it's parents
+      drawPtrXLessKlessD1 = (((outerCount - HALF_KERNEL_LENGTH) - 0.5) * scale_x) + pan_x;
+
+      // copy one data value from the signal generator output array:
+      if (!modulateX){
+        input = sigGenOutput[outerPtrX];
+      }else{
+        input = lerp(sigGenOutput[outerPtrX], sigGenOutput[outerPtrX +1], modulationX);
+      }
+      
+      // plot original data value
+      stroke(COLOR_ORIGINAL_DATA);
+
+      point(drawPtrX, HALF_SCREEN_HEIGHT - (input * scale_y));
+      // draw section of greyscale bar showing the 'color' of original data values
+      greyscaleBarMapped(drawPtrX, 0, input);
+
+      convolutionInnerLoop(); // Convolution Inner Loop
+
+      if (outerCount > KERNEL_LENGTH_MINUS1) {  // Skip one kernel length of convolution output values, which are garbage.
+        // plot the output data value
+        stroke(COLOR_OUTPUT_DATA);
+        point(drawPtrXLessK, HALF_SCREEN_HEIGHT - (cOut * scale_y));
+        //println("output[" + outerPtrX + "]" +output[outerPtrX]);
+
+        // draw section of greyscale bar showing the 'color' of output data values
+        greyscaleBarMapped(drawPtrXLessK, 10, cOut);
+
+        find1stDiffPeaks();
+      }
+    }
+  }
+  
   void convolutionInnerLoop() {
     // ================================= Convolution Inner Loop  =============================================
     // I 'invented' this convolution algorithm during experimentation in December 2016. Inner loops have probably been 
