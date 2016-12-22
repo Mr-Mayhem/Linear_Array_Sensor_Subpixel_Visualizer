@@ -672,15 +672,15 @@ class dataPlot { //<>//
 
       fill(255);
       textSize(14);
-      text("neg Peak Location: " + negPeakLoc, 10, height-280);
-      text("pos SubPixel Location: " + String.format("%.3f", posPeakSubPixelLoc), 10, height-260);
-      text("pos Peak Location: " + posPeakLoc, 10, height-240);
-      text("neg SubPixel Location: " + String.format("%.3f", negPeakSubPixelLoc), 10, height-220);
+      text("neg Peak Location: " + negPeakLoc, 10, height-300);
+      text("pos SubPixel Location: " + String.format("%.3f", posPeakSubPixelLoc), 10, height-280);
+      text("pos Peak Location: " + posPeakLoc, 10, height-260);
+      text("neg SubPixel Location: " + String.format("%.3f", negPeakSubPixelLoc), 10, height-240);
      
-      text("Subpixel Width: " + String.format("%.3f", preciseWidth), 10, height-200);
-      text("Width in mm: " + String.format("%.5f", preciseWidthMM), 10, height-180);
-      text("Subpixel Center Position = " + String.format("%.3f", precisePosLowPass), 10, height-160);
-      text("Center Position in mm: " + String.format("%.5f", preciseMMPos), 10, height-140);
+      text("Subpixel Width: " + String.format("%.3f", preciseWidth), 10, height-220);
+      text("Width in mm: " + String.format("%.5f", preciseWidthMM), 10, height-200);
+      text("Subpixel Center Position = " + String.format("%.3f", precisePosLowPass), 10, height-180);
+      text("Center Position in mm: " + String.format("%.5f", preciseMMPos), 10, height-160);
     }
   }
 

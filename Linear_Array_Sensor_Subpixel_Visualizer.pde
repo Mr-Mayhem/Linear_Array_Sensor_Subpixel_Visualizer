@@ -159,7 +159,7 @@ void setup() {
   KG1 = new KernelGenerator();
   KG1.setKernelSource(kernelSource);
   // ============================================================================================
-  signalSource = 0;  // <<< <<< Choose a signal source, 0 = raw data, 1 square pulse, 2 square wave, 
+  signalSource = 5;  // <<< <<< Choose a signal source, 0 = raw data, 1 square pulse, 2 square wave, 
   // 3 serial data, 5 center height line grab from a video camera.
   // You are encouraged to try different signal sources, to see how the subpixel code behaves with 
   // nearly perfect waveforms
