@@ -327,9 +327,9 @@ class dataPlot { //<>//
     }
 
     fill(255);
-    text("Use mouse wheel here to adjust kernel", HALF_SCREEN_WIDTH-110, (SCREEN_HEIGHT-50));
-    text("Kernel Sigma: " + String.format("%.1f", sigma), HALF_SCREEN_WIDTH-40, (SCREEN_HEIGHT-30));
-    text("Kernel Length: " + KERNEL_LENGTH, HALF_SCREEN_WIDTH-40, (SCREEN_HEIGHT-10));
+    text("Use mouse wheel here to adjust kernel", HALF_SCREEN_WIDTH-135, (SCREEN_HEIGHT-50));
+    text("Kernel Sigma: " + String.format("%.1f", sigma), HALF_SCREEN_WIDTH-60, (SCREEN_HEIGHT-30));
+    text("Kernel Length: " + KERNEL_LENGTH, HALF_SCREEN_WIDTH-60, (SCREEN_HEIGHT-10));
   }
 
   void processSerialData() {
