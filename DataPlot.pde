@@ -314,7 +314,7 @@ class dataPlot { //<>//
     fill(255);
     text(chartRedraws, 10, 50);
     Legend1.drawLegend();
-    drawKernel(0, KG1.sigma);
+    drawKernel(0, KG1.kSigma);
   }
 
   void drawKernel(float pan_x, double sigma) {
@@ -337,7 +337,7 @@ class dataPlot { //<>//
     text("Use mouse wheel here to adjust kernel", HALF_SCREEN_WIDTH, offsetY);
     
     offsetY -= dptextSizePlus2;
-    text("Kernel Sigma: " + String.format("%.1f", sigma), HALF_SCREEN_WIDTH, offsetY);
+    text("Kernel Sigma: " + String.format("%.2f", sigma), HALF_SCREEN_WIDTH, offsetY);
     
     offsetY -= dptextSizePlus2;
     text("Kernel Length: " + KERNEL_LENGTH, HALF_SCREEN_WIDTH, offsetY);

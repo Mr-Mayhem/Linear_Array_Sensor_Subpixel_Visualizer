@@ -170,10 +170,12 @@ void setup() {
   println("SCREEN_HEIGHT: " + SCREEN_HEIGHT);
   
   // ============================================================================================
-  kernelSource = 0; // <<< <<< Choose a kernel source (0 = dynamically created gaussian):
+  kernelSource = 0; // <<< <<< Choose a kernel source (0 = dynamically created gaussian "bell curve"):
   // Create a kernelGenerator object, which creates a kernel and saves it's data into an array
-  // currently supports only kernelSource = 0 (dynamically created gaussian)
-  KG1 = new KernelGenerator();
+  // 0: dynamically created gaussian 
+  // 1: hard-coded gaussuan (manually typed into array values)
+  // 2: laplacian of gaussian (LOG) just to see what happens. Some laser subpixel papers like it, but experimental, not conventional;
+  KG1 = new KernelGenerator(1.4);
   KG1.setKernelSource(kernelSource);
   // ============================================================================================
   // You are encouraged to try different signal sources to feed the system

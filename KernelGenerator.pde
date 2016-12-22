@@ -1,56 +1,82 @@
 class KernelGenerator {
   // by Douglas Mayhew 12/1/2016
   // This class creates a kernel and saves it's data into an array
-  double sigma;
-  double gaussianKernelSigma;          // input to kernel creation function, controls spreading of gaussian kernel
-  float loGKernelSigma;                // input to kernel creation function, controls spreading of loG kernel
-
+  double kSigma;        // input to dynamically created kernel function, controls sigma or 'spread' of gaussian kernel
+  double kSigmaDefault; // the default value is set on class init
+  
+  double kSigmaGaussianMin;
+  double kSigmaGaussianMax;
+  
+  double kSigmaLOGMin;
+  double kSigmaLOGMax;
+  
   // a menu of various one dimensional kernels, example: kernel = setArray(gaussian); 
   float [] gaussian = {0.0048150257, 0.028716037, 0.10281857, 0.22102419, 0.28525233, 0.22102419, 0.10281857, 0.028716037, 0.0048150257};
   // float [] sorbel = {1, 0, -1};
   // float [] gaussianLaplacian = {-7.474675E-4, -0.0123763615, -0.04307856, 0.09653235, 0.31830987, 0.09653235, -0.04307856, -0.0123763615, -7.474675E-4};
   // float [] laplacian = {1, -2, 1}; 
 
-  KernelGenerator () {
+  KernelGenerator (double defaultSigma) {
 
     // input to kernel creation function, controls spreading of gaussian kernel
     // this is an important adjustment for subpixel accuracy
     // too low and the noise creeps in and the peaks are not locally symmectrical (bad)
     // too high, and the peaks get too far smoothed out and accuracy suffers as a result
-    gaussianKernelSigma = 1.4; 
-
-    // input to kernel creation function, controls spreading of loG kernel
-    loGKernelSigma = 1.0;
+    
+    kSigmaGaussianMin = 0.5;
+    kSigmaGaussianMax = 8;
+    
+    kSigmaLOGMin = 0.75;
+    kSigmaLOGMax = 1.75;
+    
+    kSigmaDefault = defaultSigma;
+    kSigma = defaultSigma;
   }
-
+  
   public void mouseWheel(int step) {
-    sigma += (step * 0.1);
-    sigma = constrain((float) sigma, 0.5, 6);
-    gaussianKernelSigma = sigma;
-    kernel = makeGaussKernel1d(gaussianKernelSigma);
-  }
+    kSigma += (step * 0.01);
 
+    if (kernelSource == 0) {
+      kSigma = constrainDbl(kSigma, kSigmaGaussianMin, kSigmaGaussianMax);
+      kernel = makeGaussKernel1d(kSigma);
+    } else if (kernelSource == 2) {
+      kSigma = constrainDbl(kSigma, kSigmaLOGMin, kSigmaLOGMax);
+      kernel = createLoGKernal1d(kSigma);
+    }
+  }
+  
+  double constrainDbl(double value, double min, Double max){
+    double retVal;
+    if (value < min) {
+      retVal = min;
+    } else if (value > max) {
+      retVal = max;
+    } else{
+      retVal = value;
+    }
+    return retVal;
+  }
+  
+  
   float [] setKernelSource(int kernelSource) {
 
     switch (kernelSource) {
     case 0:
-      // a dynamically created gaussian bell curve kernel
-      sigma = gaussianKernelSigma;
-      kernel = makeGaussKernel1d(gaussianKernelSigma); 
+      // a dynamically created gaussian bell curve kernel, adjustable with mouse
+      kernel = makeGaussKernel1d(kSigma); 
       break;
     case 1:
-      // a hard-coded gaussian kernel
-      sigma = 1.4;
+      // a hard-coded gaussian kernel, is NOT adjustable with mouse
+      kSigma = 1.4;
       kernel = setKernelArray(gaussian);
       break;
-      //case 2:
-      //  // a loGKernelSigma kernel
-      //  sigma = loGKernelSigma;
-      //  kernel = createLoGKernal1d(loGKernelSigma);
-      //  break;
+    case 2:
+      // a loGKernelSigma kernel, adjustable with mouse
+      kernel = createLoGKernal1d(kSigma);
+      break;
     default:
-      // a hard-coded gaussian kernel, hard to mess up.
-      sigma = 1.4;
+      // a hard-coded gaussian kernel, is NOT adjustable with mouse
+      kSigma = 1.4;
       kernel = setKernelArray(gaussian);
     }
     return kernel;
@@ -73,27 +99,25 @@ class KernelGenerator {
     return kernel;
   }
 
-  //float [] makeGaussKernel1d(float sigma) {
-
-  /**
-   * This sample code is made available as part of the book "Digital Image
-   * Processing - An Algorithmic Introduction using Java" by Wilhelm Burger
-   * and Mark J. Burge, Copyright (C) 2005-2008 Springer-Verlag Berlin, 
-   * Heidelberg, New York.
-   * Note that this code comes with absolutely no warranty of any kind.
-   * See http://www.imagingbook.com for details and licensing conditions.
-   * 
-   * Date: 2007/11/10
-   
-   kernel height rescaling (which normalizes all values to sum to 1) code 
-   added here in Linerar Array Subpixel Visualizer by 
-   Doug Mayhew, November 20 2016
-   
-   code found also at:
-   https://github.com/biometrics/imagingbook/blob/master/src/gauss/GaussKernel1d.java
-   */
-
   float[] makeGaussKernel1d(double sigma) {
+    /**
+     * This sample code is made available as part of the book "Digital Image
+     * Processing - An Algorithmic Introduction using Java" by Wilhelm Burger
+     * and Mark J. Burge, Copyright (C) 2005-2008 Springer-Verlag Berlin, 
+     * Heidelberg, New York.
+     * Note that this code comes with absolutely no warranty of any kind.
+     * See http://www.imagingbook.com for details and licensing conditions.
+     * 
+     * Date: 2007/11/10
+     
+     kernel height rescaling (which normalizes all values to sum to 1) code 
+     added here in Linerar Array Subpixel Visualizer by 
+     Doug Mayhew, November 20 2016
+     
+     code found also at:
+     https://github.com/biometrics/imagingbook/blob/master/src/gauss/GaussKernel1d.java
+     */
+
     // scaling variables
     double sum = 0;
     double scale = 1;
@@ -144,32 +168,31 @@ class KernelGenerator {
     return kernelfl;
   }
 
-  //float[] createLoGKernal1d(float deviation) {
+  float[] createLoGKernal1d(double deviation) {
 
-  //  int center = (int) (4 * deviation);
-  //  int kSize = 2 * center + 1; // set to an odd value for an even integer phase offset
-  //  // using a double internally for greater precision
-  //  double[] kernel = new double[kSize];
-  //  // using a double for the final return value
-  //  float[] fkernel = new float [kSize];  // double version for return value
-  //  double first = 1.0 / (Math.PI * Math.pow(deviation, 4.0));
-  //  double second = 2.0 * Math.pow(deviation, 2.0);
-  //  double third;
-  //  int r = kSize / 2;
-  //  int x;
+    int center = (int) (5 * deviation);
+    int kSize = 2 * center + 1; // set to an odd value for an even integer phase offset
+    // using a double internally for greater precision
+    double[] kernel = new double[kSize];
+    // using a double for the final return value
+    float[] fkernel = new float [kSize];  // double version for return value
+    double first = 1.0 / (Math.PI * Math.pow(deviation, 4.0));
+    double second = 2.0 * Math.pow(deviation, 2.0);
+    double third;
+    int r = kSize / 2;
+    int x;
 
-  //  for (int i = -r; i <= r; i++) {
-  //    x = i + r;
-  //    third = Math.pow(i, 2.0) / second;
-  //    kernel[x] = (double) (first * (1 - third) * Math.exp(-third));
-  //    fkernel[x] = (float) kernel[x];
-  //    //println("LoG kernel[" + x + "] = " + fkernel[x]);
-  //  }
-  //  KERNEL_LENGTH = fkernel.length;                // always odd
-  //  KERNEL_LENGTH_MINUS1 = KERNEL_LENGTH - 1;      // always even
-  //  HALF_KERNEL_LENGTH = KERNEL_LENGTH_MINUS1 / 2; // always even divided by 2 = even halves
-  //  //println("KERNEL_LENGTH: " + KERNEL_LENGTH);
-  //  return fkernel;
-  //}
+    for (int i = -r; i <= r; i++) {
+      x = i + r;
+      third = Math.pow(i, 2.0) / second;
+      kernel[x] = (double) (first * (1 - third) * Math.exp(-third));
+      fkernel[x] = (float) kernel[x];
+      //println("LoG kernel[" + x + "] = " + fkernel[x]);
+    }
+    KERNEL_LENGTH = fkernel.length;                // always odd
+    KERNEL_LENGTH_MINUS1 = KERNEL_LENGTH - 1;      // always even
+    HALF_KERNEL_LENGTH = KERNEL_LENGTH_MINUS1 / 2; // always even divided by 2 = even halves
+    //println("KERNEL_LENGTH: " + KERNEL_LENGTH);
+    return fkernel;
   }
-//
+}
