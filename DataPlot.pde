@@ -208,7 +208,7 @@ class dataPlot { //<>//
       // set the loop pointers to the last value each loop would normally reach during normal operation
       outerPtrX = wDataStopPos-1;  
       innerPtrX = KERNEL_LENGTH_MINUS1-1;
-      KG1.mouseWheel(step);               // this passes to the kernel generator which makes the new kernel array on the fly
+      SG1.mouseWheel(step);               // this passes to the kernel generator which makes the new kernel array on the fly
       output = new float[KERNEL_LENGTH];  // this sizes the output array to match the new kernel array length
     } else if (overPlot()) {
       PanZoomPlot.mouseWheel(step);
@@ -228,12 +228,13 @@ class dataPlot { //<>//
     
     // The minimum number of input data samples is two times the kernel length + 1,  which results in 
     // the minumum of only one sample processed. (we ignore the fist and last data by one kernel's width)
-    
-    modulationIndex++; // increment the index to the sine wave array
-    if (modulationIndex > sineArray.length-1){
-      modulationIndex = 0;
+    if (modulateX){
+      modulationIndex++; // increment the index to the sine wave array
+      if (modulationIndex > sineArray.length-1){
+        modulationIndex = 0;
+      }
+      modulationX = sineArray[modulationIndex]; // value used to interpolate the data to simulate shadow movement
     }
-    modulationX = sineArray[modulationIndex]; // value used to interpolate the data to simulate shadow movement
     
     wDataStartPos = 0;
     wDataStopPos = dpDataLen;
@@ -314,7 +315,7 @@ class dataPlot { //<>//
     fill(255);
     text(chartRedraws, 10, 50);
     Legend1.drawLegend();
-    drawKernel(0, KG1.kSigma);
+    drawKernel(0, SG1.kSigma);
   }
 
   void drawKernel(float pan_x, double sigma) {
@@ -354,7 +355,7 @@ class dataPlot { //<>//
     posPeakVal = 0;
 
     // increment the outer loop pointer from wDataStartPos to wDataStopPos - 1
-    for (outerPtrX = wDataStartPos; outerPtrX < wDataStopPos; outerPtrX++) {
+    for (outerPtrX = wDataStartPos; outerPtrX < wDataStopPos-1; outerPtrX++) {
       outerCount++; // lets us index (x axis) on the screen offset from outerPtrX
 
       // Below we prepare 3 x shift correction indexes to reduce the math work.
@@ -371,8 +372,15 @@ class dataPlot { //<>//
       // parse two pixel data values from the serial port data byte array:
       // Read a pair of bytes from the byte array, convert them into an integer, 
       // shift right 2 places(divide by 4), and copy the value to a simple global variable
+      
       input = (byteArray[outerPtrX<<1]<< 8 | (byteArray[(outerPtrX<<1) + 1] & 0xFF))>>2;
-
+      //if (!modulateX){
+      //  input = (byteArray[outerPtrX<<1]<< 8 | (byteArray[(outerPtrX<<1) + 1] & 0xFF))>>2;
+      //}else{
+      //  input = lerp((byteArray[outerPtrX<<1]<< 8 | (byteArray[(outerPtrX<<1) + 1] & 0xFF))>>2, 
+      //  (byteArray[(outerPtrX+1)<<1]<< 8 | (byteArray[((outerPtrX+1)<<1) + 1] & 0xFF))>>2, modulationX);
+      //}
+      
       // plot original data value
       stroke(COLOR_ORIGINAL_DATA);
 
@@ -406,7 +414,7 @@ class dataPlot { //<>//
     posPeakVal = 0;
 
     // increment the outer loop pointer from wDataStartPos to wDataStopPos - 1
-    for (outerPtrX = wDataStartPos; outerPtrX < wDataStopPos; outerPtrX++) {
+    for (outerPtrX = wDataStartPos; outerPtrX < wDataStopPos-1; outerPtrX++) {
       outerCount++; // lets us index (x axis) on the screen offset from outerPtrX
 
       // Below we prepare 3 x shift correction indexes to reduce the math work.
@@ -422,8 +430,14 @@ class dataPlot { //<>//
 
       // copy one data value from the video array, which contains a row of color video integers
       // convert color pixel to greyscale, and multiply by 8 to bring the levels up. 
-      input = Pixelbrightness(videoArray[outerPtrX]) * 8; // 3 camera values of 255 max = 765 * 8 = 6120, 13 bits about
-
+      input = Pixelbrightness(videoArray[outerPtrX]) * 8; // 3 camera values of 255 max = 765 * 8 = 6120, = 13 bits, roughly
+      
+      //if (!modulateX){
+      //  input = Pixelbrightness(videoArray[outerPtrX]) * 8;
+      //}else{
+      //  input = lerp(Pixelbrightness(videoArray[outerPtrX]) * 8, Pixelbrightness(videoArray[outerPtrX + 1]) * 8, modulationX);
+      //}
+      
       // plot original data value
       stroke(COLOR_ORIGINAL_DATA);
 
@@ -691,7 +705,6 @@ class dataPlot { //<>//
       ScreenPosX = constrain(ScreenPosX, 0, width-1);
       line(ScreenPosX, HALF_SCREEN_HEIGHT + subpixelMarkerLen, ScreenPosX, HALF_SCREEN_HEIGHT - subpixelMarkerLen);
       waterfallTop[int(ScreenPosX)] = color(0, 255, 0);
-
 
       // Mark negPeakLoc 3 pixel cluster with one red circle each
       stroke(255, 0, 0);

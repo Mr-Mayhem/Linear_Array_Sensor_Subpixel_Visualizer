@@ -139,7 +139,6 @@ int HALF_SCREEN_WIDTH;               // half the screen width, reduces division 
 Serial myPort;       // One Serial object, receives serial port data from Teensy 3.6 running sensor driver sketch
 dataPlot DP1;        // One dataPlot object, handles plotting data with mouse sliding and zooming ability
 SignalGenerator SG1; // Creates artificial signals for the system to process and display for testing & experientation
-KernelGenerator KG1; // Creates a kernel and saves it's data into an array
 Capture video;       // create video capture object named video
 // ==============================================================================================
 
@@ -170,16 +169,19 @@ void setup() {
   println("SCREEN_HEIGHT: " + SCREEN_HEIGHT);
   
   // ============================================================================================
+  // 0 is default, dynamically created gaussian kernel
   kernelSource = 0; // <<< <<< Choose a kernel source (0 = dynamically created gaussian "bell curve"):
+  
   // Create a kernelGenerator object, which creates a kernel and saves it's data into an array
-  // 0: dynamically created gaussian 
-  // 1: hard-coded gaussuan (manually typed array values)
-  // 2: laplacian of gaussian (LOG) just to see what happens. Some laser subpixel papers like it, but experimental, not conventional;
-  KG1 = new KernelGenerator(1.4);
-  KG1.setKernelSource(kernelSource);
+  // 0: dynamically created gaussian kernel
+  // 1: hard-coded gaussuan kernel (manually typed array values)
+  // 2: laplacian of gaussian (LOG) kernel just to see what happens. Some laser subpixel papers like it, but experimental, not conventional;
+
   // ============================================================================================
   // You are encouraged to try different signal sources to feed the system
+ 
   signalSource = 0;  // <<< <<< Choose a signal source; 
+  
   // 0: manually typed array data
   // 1: square impulse
   // 2: square wave 
@@ -191,7 +193,8 @@ void setup() {
   // =============================================================================================
    
   // Create a dataPlot object, which plots data and provides mouse sliding and zooming ability
-  SG1 = new SignalGenerator();
+  SG1 = new SignalGenerator(1.4);
+  SG1.setKernelSource(kernelSource);
   sigGenOutput = SG1.signalGeneratorOutput(signalSource, 256, 1000); // data source, num of data points, height of peaks
   sineArray = SG1.oneCycleSineWaveFloats(256); // values used to move x to and fro as "modulation"
   
