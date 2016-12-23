@@ -813,4 +813,85 @@ class dataPlot { //<>//
     }
     return rdOut;
   }
+  
+  //double qinty(float ym1, float y0, float yp1) { // another subpixel fit function, not used, but here for reference
+  ////QINT - quadratic interpolation of three adjacent samples
+  ////[p,y,a] = qint(ym1,y0,yp1) 
+
+  //// returns the extremum location p, height y, and half-curvature a
+  //// of a parabolic fit through three points. 
+  //// Parabola is given by y(x) = a*(x-p)^2+b, 
+  //// where y(-1)=ym1, y(0)=y0, y(1)=yp1. 
+  
+  //double p = (yp1 - ym1)/(2*(2*y0 - yp1 - ym1));
+  ////double y = y0 - 0.25*(ym1-yp1)*p;
+  ////float a = 0.5*(ym1 - 2*y0 + yp1);
+  
+  //return p;
+  //}
+  
+  //int[] FindEdges(){
+  //  // a function  for future use perhaps, otherwise ignore.
+  //  // Edge finder for use after gaussianLaplacian convolution
+  //  // Set kernel to gaussianLaplacian 
+    
+  //  // This function is part of the JFeatureLib project: https://github.com/locked-fg/JFeatureLib
+  //  // I refactored it for 1d use, (the original is for 2d photos or images) and made other
+  //  // changes to make it follow my way of doing things here.
+  
+  //  // ZeroCrossing is an algorithm to find the zero crossings in an image 
+  //  // original author: Timothy Sharman 
+    
+  //  // Find the zero crossings
+  //  // If when neighbouring points are multiplied the result is -ve then there 
+  //  // must be a change in sign between these two points. 
+  //  // If the change is also above the thereshold then set it as a zero crossing.   
+    
+  //  // I played with this code for sake of learning, but I don't expect to use it
+  //  // unless I can find a sub-pixel method to go with it. 
+    
+  //  // Using the 1st derivative is preferable to using this 2nd derivative edge 
+  //  // finding method, because this 2nd derivative edge finder works at pixel resolution 
+  //  // only; there is not a sub-pixel method for it that I am aware of (yet). Whereas, the 
+  //  // peaks present in the first derivative can be prpcessed with various sub-pixel
+  //  // routines via many different methods, such as a fitting a parabola to the top 3 
+  //  // points (quadratic interpolation), gaussuan estimation, linear regression, etc.
+  
+  //  // To find the zero crossings in the image after applying the LOG kernel you must check 
+  //  // each point in the array to see if it lies on a zero crossing
+  //  // This is done by checking the neighbours around the pixel.
+  
+  //  int outerPtrXMinus1 = outerPtrX -1;
+  //  int outerPtrXPlus1 = outerPtrX + 1;
+  //  int edgeLimit = 10;
+  //  int edgeThresh = 64;
+  //  boolean edgeLimiter = false;
+  //  int[] edges = new int[dpDataLen];
+    
+  //  if (outerPtrX > 0 && outerPtrXMinus1 < SENSOR_PIXELS) { 
+  //    if(edgeLimiter){ 
+  //      edgeThresh = edgeLimit; 
+  //    } else { 
+  //      edgeThresh = 0; 
+  //    }
+  //  }
+  
+  //  if(output[outerPtrXMinus1]*output[outerPtrXPlus1] < 0){ 
+  //    if(Math.abs(output[outerPtrXMinus1]) + Math.abs(output[outerPtrXPlus1]) > edgeThresh){ 
+  //       edges[outerPtrXMinus1] = 255;   // white
+  //    } else { 
+  //      edges[outerPtrXMinus1] = 0;      // black
+  //    } 
+  //  } else if(output[outerPtrX+1]*output[outerPtrXMinus1] < 0){
+  //    if(Math.abs(output[outerPtrXPlus1])+Math.abs(output[outerPtrXMinus1]) > edgeThresh){ 
+  //      edges[outerPtrXMinus1] = 255;   // white
+  //      } else { 
+  //        edges[outerPtrXMinus1] = 0;   // black
+  //      } 
+  //  } else { 
+  //    edges[outerPtrXMinus1] = 0; 
+  //  } 
+   
+  //return edges;
+  //}
 }
