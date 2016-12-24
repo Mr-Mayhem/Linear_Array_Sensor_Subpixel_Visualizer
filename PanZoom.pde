@@ -31,7 +31,7 @@ public class PanZoomX {
 
   private float logScale = 0.1;
   private float scale_x = 1;
-  private float scale_y = 0.125;
+  private float scale_y = 0.078;
   private float pan_x = 1;
   private float pan_y = 0;
   private float maxpan_x = 0;

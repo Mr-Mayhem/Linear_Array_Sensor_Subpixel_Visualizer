@@ -1,8 +1,11 @@
-/* //<>// //<>//
+/*
 Linear_Array_Sensor_Subpixel_Visualizer.pde, a demo of subpixel resolution shadow position measurement and visualization,
  using a TSL1402R or TSL1410R linear photodiode array via serial port, or synthesized waveforms.
  
+ The shadow positions reported in the text display assume the first sensor pixel is pixel number 1.
+ 
  Created by Douglas Mayhew, November 20, 2016.
+ 
  Released into the public domain, except:
  * The function, 'makeGaussKernel1d' is made available as part of the book 
  * "Digital Image * Processing - An Algorithmic Introduction using Java" by Wilhelm Burger
@@ -113,25 +116,20 @@ float[] sineArray = new float[0];    // holds a one cycle sine wave, used to mod
 // ==============================================================================================
 // Global Variables:
 
+int HALF_SCREEN_HEIGHT;              // half the screen height, reduces division math work because it is used alot
+int HALF_SCREEN_WIDTH;               // half the screen width, reduces division math work because it is used alot
 int signalSource;                    // selects a signal data source
 int kernelSource;                    // selects a kernel
 int SENSOR_PIXELS;                   // number of discrete data values, 1 per sensor pixel
 int N_BYTES_PER_SENSOR_FRAME;        // we use 2 bytes to represent each sensor pixel
 int N_BYTES_PER_SENSOR_FRAME_PLUS1;  // the data bytes + the PREFIX byte
-int SCREEN_HEIGHT;                   // scales screen height relative to highest data value
-int HALF_SCREEN_HEIGHT;              // half the screen height, reduces division math work because it is used alot
 int KERNEL_LENGTH;                   // number of discrete values in the kernel array, set in setup() 
 int KERNEL_LENGTH_MINUS1;            // kernel length minus 1, used to reduce math in loops
 int HALF_KERNEL_LENGTH;              // Half the kernel length, used to correct convoltion phase shift
 int bytesRead;                       // number of bytes actually read out from the serial buffer
 int availableBytesDraw;              // used to show the number of bytes present in the serial buffer
 int gtextSize;                       // sizes all text, consumed by this page, dataplot class, legend class
-// used to count sensor data frames
-int chartRedraws = 0; 
-
-// width
-int SCREEN_WIDTH;                    // screen width
-int HALF_SCREEN_WIDTH;               // half the screen width, reduces division math work because it is used alot
+int chartRedraws = 0;                 // used to count sensor data frames
 
 // ==============================================================================================
 // Set Objects
@@ -143,30 +141,30 @@ Capture video;       // create video capture object named video
 // ==============================================================================================
 
 void setup() {
+  // Set a size or fullScreen:
+  //fullScreen();
+  size(640, 480);
+  //size(1280, 800);
   // Set the data & screen scaling:
   // You are encouraged to adjust these, especially to 'zoom in' to the shadow location see the subpixel details better.
   
-  // the data length times the number of pixels per data point
-  SCREEN_WIDTH = 1280;
-  HALF_SCREEN_WIDTH = SCREEN_WIDTH / 2;
+  // leave alone! Used in many places to center data at center of screen, width-wise
+  HALF_SCREEN_WIDTH = width / 2;
 
-  // sets screen height relative to the highest ADC value, greater values increases screen height
-  SCREEN_HEIGHT = 700; 
-
-  // leave alone! Used in many places to center data at middle height
-  HALF_SCREEN_HEIGHT = SCREEN_HEIGHT / 2;
+  // leave alone! Used in many places to center data at center of screen, height-wise
+  HALF_SCREEN_HEIGHT = height / 2;
   
   // set the screen dimensions
-  surface.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);
-  gtextSize = 12; // sizes all text, consumed by this page, dataplot class, legend class to space text y using this value plus padding
+  //surface.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);
+  gtextSize = 9; // sizes all text, consumed by this page, dataplot class, legend class to space text y using this value plus padding
   // set framerate() a little above where increases don't speed it up much.
   // Also note, for highest speed, comment out drawing plots you don't care about.
   frameRate(500);
   background(0);
   strokeWeight(1);
   textSize(gtextSize);
-  println("SCREEN_WIDTH: " + SCREEN_WIDTH);
-  println("SCREEN_HEIGHT: " + SCREEN_HEIGHT);
+  println("SCREEN_WIDTH: " + width);
+  println("SCREEN_HEIGHT: " + height);
   
   // ============================================================================================
   // 0 is default, dynamically created gaussian kernel
@@ -201,15 +199,22 @@ void setup() {
   // Create the dataPlot object, which handles plotting data with mouse sliding and zooming ability
   // dataStop set not past SENSOR_PIXELS, rather than SENSOR_PIXELS + KERNEL_LENGTH, to prevent convolution garbage at end 
   // from partial kernel immersion
-  DP1 = new dataPlot(this, 0, 0, SCREEN_WIDTH, HALF_SCREEN_HEIGHT, SENSOR_PIXELS, gtextSize); 
-  DP1.modulateX = true; // set to false to stop the simulated left to right data movement on simulated data (wobbling)
+  DP1 = new dataPlot(this, 0, 0, width, HALF_SCREEN_HEIGHT, SENSOR_PIXELS, gtextSize); 
+  DP1.modulateX = true; // apply simulated shadow movement, half a pixel left and right in a sine wave motion
   if (signalSource == 3) {
     noLoop();
     // Set up serial connection
     // Set to your Teensy COM port number to fix error, make sure it talks to Arduino software if stuck.
+    println(Serial.list());
+    
+    //Linux
+    //myPort = new Serial(this, "/dev/ttyACM0", 12500000);
+    
+    //Windows
     myPort = new Serial(this, "COM5", 12500000);
     // the serial port will buffer until prefix (unique byte that equals 255) and then fire serialEvent()
     myPort.bufferUntil(PREFIX);
+    myPort.clear();
   }
   if (signalSource == 5) {
     noLoop();

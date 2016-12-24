@@ -26,7 +26,7 @@ class Grid {
 void drawGrid2(float startX, float stopX, float startY, float stopY, float spacingX, float spacingY) {
 
   strokeWeight(1);
-  stroke(25, 25, 25); // White Color
+  stroke(20, 20, 20); // White Color
   for (float x = startX; x <= stopX; x += spacingX) {
     line(x, startY, x, stopY);
   }

@@ -1,8 +1,8 @@
-class dataPlot { //<>//
+class dataPlot {
   // by Douglas Mayhew 12/1/2016
   // Plots data and provides mouse sliding and zooming ability
   
-  int dpXpos;                 // dataPlot class init variables
+  int dpXpos;                // dataPlot class init variables
   int dpYpos;
   int dpWidth;
   int dpHeight;
@@ -10,41 +10,41 @@ class dataPlot { //<>//
   int dpTextSize;
   int dptextSizePlus2;
 
-  float input;                // convolution input y value
-  float cOutPrev;             // the previous convolution output y value
-  float cOut;                 // the current convolution output y value
+  float input;               // convolution input y value
+  float cOutPrev;            // the previous convolution output y value
+  float cOut;                // the current convolution output y value
 
-  float kernelMultiplier;     // multiplies the plotted kernel values for greater visibility because the values are small
-  int kernelDrawYOffset;      // height above bottom of screen to draw the kernel data points
+  float kernelMultiplier;    // multiplies the plotted kernel values for greater visibility because the values are small
+  int kernelDrawYOffset;     // height above bottom of screen to draw the kernel data points
 
-  int wDataStartPos;          // the index of the first data point
-  int wDataStopPos;           // the index of the last data point
+  int wDataStartPos;         // the index of the first data point
+  int wDataStopPos;          // the index of the last data point
+  
+  int outerPtrX = 0;         // outer loop pointer
+  int innerPtrX = 0;         // inner loop pointer, used only during convolution
 
-  int innerPtrX = 0;          // inner loop pointer for convolution
-  int outerPtrX = 0;          // 1st outer loop pointer
-
-  float pan_x;                // local copies of variables from PanZoom object
+  float pan_x;               // local copies of variables from PanZoom object
   float scale_x;
   float pan_y;
   float scale_y;
-  float dpKernelSigma;        // current kernel sigma as determined by kernel Pan Zoom object
-  float dpPrevKernelSigma;    // previous kernel sigma as determined by kernel Pan Zoom object
-  float drawPtrX;             // phase correction drawing pointers
+  float dpKernelSigma;       // current kernel sigma as determined by kernel Pan Zoom object
+  float dpPrevKernelSigma;   // previous kernel sigma as determined by kernel Pan Zoom object
+  float drawPtrX;            // phase correction drawing pointers
   float drawPtrXLessK;
   float drawPtrXLessKlessD1;
   
-  boolean modulateX;          // toggles the modulation on and off
-  int modulationIndex;        // index to index through the modulation waveform
-  float modulationX;          // added to x axis of data to simulate left right movement
-  float lerpX;                // new y value in between adjacent x's, used to shift data in input array
-  int offsetY;                // temp variable to offset the y position (the height) of text
+  boolean modulateX;         // toggles the modulation on and off
+  int modulationIndex;       // index to index through the modulation waveform
+  float modulationX;         // added to x axis of data to simulate left right movement
+  float lerpX;               // new y value in between adjacent x's, used to shift data in input array to simulate shadow motion
+  int offsetY;               // temp variable to offset the y position (the height) of text
   // =============================================================================================
 
   // Subpixel Variables
-  float negPeakLoc;           // x index position of greatest negative y difference peak found in 1st difference data
-  float posPeakLoc;           // x index position of greatest positive y difference peak found in 1st difference data
+  float negPeakLoc;          // x index position of greatest negative y difference peak found in 1st difference data
+  float posPeakLoc;          // x index position of greatest positive y difference peak found in 1st difference data
 
-  float widthInPixels;        // integer difference between the two peaks without subpixel precision
+  float widthInPixels;         // integer difference between the two peaks without subpixel precision
 
   float negPeakVal;          // value of greatest negative y difference peak found in 1st difference data
   float posPeakVal;          // value of greatest positive y difference peak found in 1st difference data 
@@ -71,16 +71,16 @@ class dataPlot { //<>//
   float shiftSumX;           // temporary variable for summing x shift values
   float calCoefficient;      // corrects mm width by multiplying by this value
 
-  float diff0;                // 1st temp variable which holds a difference value for the left side of the 3 values bracketing the d1 peakst
-  float diff1;                // 1st temp variable which holds a difference value for the center of the 3 values bracketing the d1 peak
-  float diff2;                // 1st temp variable which holds a difference value for the right of the 3 values bracketing the d1 peak
+  float diff0;               // 1st temp variable which holds a difference value for the left side of the 3 values bracketing the d1 peak
+  float diff1;               // 1st temp variable which holds a difference value for the center of the 3 values bracketing the d1 peak
+  float diff2;               // 1st temp variable which holds a difference value for the right of the 3 values bracketing the d1 peak
 
-  float ScreenNegX;           // holds screen X coordinate for the negative peak subpixel position
-  float ScreenCenX;           // holds screen X coordinate for the center subpixel position
-  float ScreenPosX;           // holds screen X coordinate for the positive peak subpixel position
+  float ScreenNegX;          // holds screen X coordinate for the negative peak subpixel position
+  float ScreenCenX;          // holds screen X coordinate for the center subpixel position
+  float ScreenPosX;          // holds screen X coordinate for the positive peak subpixel position
 
-  int markSize;               // diameter of drawn subpixel marker circles
-  int subpixelMarkerLen;      // length of vertical lines which indicate subpixel peaks and shadow center location
+  int markSize;              // diameter of drawn subpixel marker circles
+  int subpixelMarkerLen;     // length of vertical lines which indicate subpixel peaks and shadow center location
   int movingAverageKernalSize; // Length of moving average filter used to smooth subpixel output
   
   // =============================================================================================
@@ -141,12 +141,13 @@ class dataPlot { //<>//
     markSize = 3;
 
     // sets height deviation of vertical lines from center height, indicates subpixel peaks and shadow center location
-    subpixelMarkerLen = int(SCREEN_HEIGHT * 0.02);
+    subpixelMarkerLen = int(height * 0.02);
 
     // corrects mm width by multiplying by this value
     calCoefficient = 0.981;
 
-    // arrays for output signals, get resized after kernel size is known
+    // array for convolution, get resized after KERNEL_LENGTH is known,
+    // must always match kernel length
     output = new float[KERNEL_LENGTH];
     waterfallTop = new int[width+1];  // feeds the waterfall display
     
@@ -170,13 +171,13 @@ class dataPlot { //<>//
     if (signalSource == 5) {
       cameraImage = createImage(640, 60, RGB);
     }
-    movingAverageKernalSize = 7; // use odd size for even integer offset
+    movingAverageKernalSize = 7; // use odd size for even integer offset, default = 7;
     F1 = new MovingAverageFilter(movingAverageKernalSize); // used to smooth the subpixel center position output
   }
 
   boolean overKernel() {
     if (mouseX > 0 && mouseX < dpWidth && 
-      mouseY > SCREEN_HEIGHT - 120) {
+      mouseY > height - 120) {
       return true;
     } else {
       return false;
@@ -185,7 +186,7 @@ class dataPlot { //<>//
 
   boolean overPlot() {
     if (mouseX > 0 && mouseX < dpWidth && 
-      mouseY > 0 && mouseY < SCREEN_HEIGHT - 120) {
+      mouseY > 0 && mouseY < height - 120) {
       return true;
     } else {
       return false;
@@ -205,9 +206,8 @@ class dataPlot { //<>//
   void mouseWheel(int step) {
     if (overKernel()) {
       // we may change the kernel size and output array size, so to prevent array index errors, 
-      // set the loop pointers to the last value each loop would normally reach during normal operation
+      // set the outer loop pointer to the last value it would normally reach during normal operation
       outerPtrX = wDataStopPos-1;  
-      innerPtrX = KERNEL_LENGTH_MINUS1-1;
       SG1.mouseWheel(step);               // this passes to the kernel generator which makes the new kernel array on the fly
       output = new float[KERNEL_LENGTH];  // this sizes the output array to match the new kernel array length
     } else if (overPlot()) {
@@ -223,8 +223,7 @@ class dataPlot { //<>//
     pan_y = PanZoomPlot.getPanY();
     scale_y = PanZoomPlot.getScaleY();
     
-    // Grid1.drawGrid(SCREEN_WIDTH, SCREEN_HEIGHT, 32/scale_x);
-    drawGrid2(pan_x, (wDataStopPos * scale_x) + pan_x, 0, height + pan_y, 32 * scale_x, 256 * scale_y);
+    drawGrid2(pan_x, ((wDataStopPos) * scale_x) + pan_x, 0, height-1 + pan_y, 32 * scale_x, 256 * scale_y);
     
     // The minimum number of input data samples is two times the kernel length + 1,  which results in 
     // the minumum of only one sample processed. (we ignore the fist and last data by one kernel's width)
@@ -245,7 +244,7 @@ class dataPlot { //<>//
     if (signalSource == 3) {
       
       // Plot using Serial data, remember to plug in Teensy 3.6 via usb programming cable and that sister sketch is running
-      processSerialData();          // from 0 to SENSOR_PIXELS-1
+      processSerialData();
     
   } else if (signalSource == 5) { 
       
@@ -286,23 +285,17 @@ class dataPlot { //<>//
       image(cameraImage, pan_x, 30, x, cameraImage.height);
 
       processVideoData();
-    } else {      // Plot using Simulated Data
-      
-      // Counts 1 to 60 and repeats, to provide a sense of the frame rate
-      fill(255);
-      text(chartRedraws, 10, 50);
-      
-      processSignalGeneratorData(); // from 0 to SENSOR_PIXELS-1
+    } else {
+      // Plot using Simulated Data
+      processSignalGeneratorData();
     }
 
     subpixelCalc(); // Subpixel calculations  
 
-    waterfall(width, imageHeight);
-    
-    fill(255);
+    waterfall(width, imageHeight); // update and draw the new waterfall image
     
     offsetY = 45;
-
+    fill(255);
     textAlign(CENTER);
     text("Use mouse to drag, mouse wheel to zoom", HALF_SCREEN_WIDTH, offsetY);
     
@@ -310,10 +303,13 @@ class dataPlot { //<>//
     text("pan_x: " + String.format("%.3f", pan_x) + "  scale_x: " + String.format("%.3f", scale_x), HALF_SCREEN_WIDTH, offsetY);
     textAlign(LEFT);
     
-    // draw Legend and Kernel
     // Counts 1 to 60 and repeats, to provide a sense of the frame rate
-    fill(255);
     text(chartRedraws, 10, 50);
+    
+    // draw actual frameRate
+    text(frameRate, 50, 50);
+    
+    // draw Legend and Kernel
     Legend1.drawLegend();
     drawKernel(0, SG1.kSigma);
   }
@@ -329,11 +325,11 @@ class dataPlot { //<>//
 
       // draw new kernel point (y scaled up by kernelMultiplier for better visibility)
       point(drawPtrXLessK+HALF_SCREEN_WIDTH, 
-        SCREEN_HEIGHT-kernelDrawYOffset - (kernel[outerPtrX] * kernelMultiplier));
+        height-kernelDrawYOffset - (kernel[outerPtrX] * kernelMultiplier));
     }
 
     fill(255);
-    offsetY = SCREEN_HEIGHT-10;
+    offsetY = height-10;
     textAlign(CENTER);
     text("Use mouse wheel here to adjust kernel", HALF_SCREEN_WIDTH, offsetY);
     
@@ -354,8 +350,8 @@ class dataPlot { //<>//
     negPeakVal = 0;
     posPeakVal = 0;
 
-    // increment the outer loop pointer from wDataStartPos to wDataStopPos - 1
-    for (outerPtrX = wDataStartPos; outerPtrX < wDataStopPos-1; outerPtrX++) {
+    // increment the outer loop pointer
+    for (outerPtrX = wDataStartPos; outerPtrX < wDataStopPos; outerPtrX++) {
       outerCount++; // lets us index (x axis) on the screen offset from outerPtrX
 
       // Below we prepare 3 x shift correction indexes to reduce the math work.
@@ -413,8 +409,8 @@ class dataPlot { //<>//
     negPeakVal = 0;
     posPeakVal = 0;
 
-    // increment the outer loop pointer from wDataStartPos to wDataStopPos - 1
-    for (outerPtrX = wDataStartPos; outerPtrX < wDataStopPos-1; outerPtrX++) {
+    // increment the outer loop pointer
+    for (outerPtrX = wDataStartPos; outerPtrX < wDataStopPos; outerPtrX++) {
       outerCount++; // lets us index (x axis) on the screen offset from outerPtrX
 
       // Below we prepare 3 x shift correction indexes to reduce the math work.
@@ -470,8 +466,8 @@ class dataPlot { //<>//
     negPeakVal = 0;
     posPeakVal = 0;
 
-    // increment the outer loop pointer from wDataStartPos to wDataStopPos - 1
-    for (outerPtrX = wDataStartPos; outerPtrX < wDataStopPos-1; outerPtrX++) {
+    // increment the outer loop pointer
+    for (outerPtrX = wDataStartPos; outerPtrX < wDataStopPos-1; outerPtrX++) { 
       outerCount++; // lets us index (x axis) on the screen offset from outerPtrX
 
       // Below we prepare 3 x shift correction indexes to reduce the math work.
@@ -489,7 +485,7 @@ class dataPlot { //<>//
       if (!modulateX){
         input = sigGenOutput[outerPtrX];
       }else{
-        input = lerp(sigGenOutput[outerPtrX], sigGenOutput[outerPtrX +1], modulationX);
+        input = lerp(sigGenOutput[outerPtrX], sigGenOutput[outerPtrX+1], modulationX);
       }
       
       // plot original data value
@@ -501,7 +497,8 @@ class dataPlot { //<>//
 
       convolutionInnerLoop(); // Convolution Inner Loop
 
-      if (outerCount > KERNEL_LENGTH_MINUS1) {  // Skip one kernel length of convolution output values, which are garbage.
+      if (outerCount > KERNEL_LENGTH_MINUS1) {  // Skip one kernel length of convolution output values, 
+      // which are garbage due to the kernel not being fully immersed in the input signal.
         // plot the output data value
         stroke(COLOR_OUTPUT_DATA);
         point(drawPtrXLessK, HALF_SCREEN_HEIGHT - (cOut * scale_y));
@@ -574,8 +571,8 @@ class dataPlot { //<>//
     // find 1st difference of the convolved data, the difference between adjacent points in the smoothed data.
     diff0 = cOut - cOutPrev; // (right y value) // difference between the current convolution output value 
     // and the previous one, in the form y[x] - y[x-1]
-    // In dsp, this difference is preferably called the 1st difference, 
-    // but some call it the 1st derivative or the partial derivative.
+    // In dsp, this difference is preferably called the "first difference", but some call it the "first derivative",
+    // and some folks refer to each difference value produced above as a "partial derivative".
 
     // =================================== End 1st difference ===============================================
 
@@ -593,13 +590,16 @@ class dataPlot { //<>//
 
     if (diff1 > posPeakVal) {
       posPeakVal = diff1;
-      posPeakLoc = (outerPtrX - 1.5) - HALF_KERNEL_LENGTH; // x-1
+      // the center peak pixel is at x index - 1 here
+      // also, the first difference points are situated in-between the original data points, and to the left (negative),
+      // so x index - 0.5. These two numbers total 1.5
+      posPeakLoc = (outerPtrX - 0.5) - HALF_KERNEL_LENGTH;
       posPeakRightPixel = diff0;   // y value @ x index -1 (right)
       posPeakCenterPixel = diff1;  // y value @ x index -2 (center) (positive 1st difference peak location)
       posPeakLeftPixel = diff2;    // y value @ x index -3 (left)
     } else if (diff1 < negPeakVal) {
       negPeakVal = diff1;
-      negPeakLoc = (outerPtrX - 1.5) - HALF_KERNEL_LENGTH; // x-1
+      negPeakLoc = (outerPtrX - 0.5) - HALF_KERNEL_LENGTH; // x-1 and x-0.5 for difference being in-between original data
       negPeakRightPixel = diff0;   // y value @ x index -1 (right)
       negPeakCenterPixel = diff1;  // y value @ x index -2 (center) (negative 1st difference peak location)
       negPeakLeftPixel = diff2;    // y value @ x index -3 (left)
@@ -631,12 +631,12 @@ class dataPlot { //<>//
     precisePos = 0;
     negPeakSubPixelLoc = 0;
     posPeakSubPixelLoc = 0;
-
-    waterfallTop[int(ScreenNegX)] = 0; // set the previous waterfall feeder color markers back to black, we are about to set new ones.
+    
+    // set the 3 previous waterfall top row subpixel color markers back to black, 
+    // because we set new ones below.
+    waterfallTop[int(ScreenNegX)] = 0; 
     waterfallTop[int(ScreenCenX)] = 0; 
     waterfallTop[int(ScreenPosX)] = 0; 
-
-    //arrayCopy (videoArray, waterfallTop);
 
     if (negPeakVal < -64 && posPeakVal > 64) // check for significant threshold
     {
@@ -675,49 +675,48 @@ class dataPlot { //<>//
 
       F1.nextValue(precisePos);
       precisePosLowPass = F1.getAverage();
+      
+      // keep the center from lagging too far; keep it between the left and right peaks during rapid shadow movement
+      precisePosLowPass = constrainFloat(precisePosLowPass, negPeakLoc, posPeakLoc);
 
       //precisePosLowPass = (precisePosLowPass * 0.9) + (precisePos * 0.1);         // apply a simple low pass filter
 
       preciseMMPos = precisePosLowPass * sensorPixelSpacing;
 
-      // sum of a few offsets, so we don't need to recalculate
-      shiftSumX = wDataStartPos - 1; 
-
       // Mark negPeakSubPixelLoc with red line
       noFill();
       strokeWeight(1);
       stroke(255, 0, 0);
-      ScreenNegX = ((negPeakLoc + negPeakSubPixelLoc - shiftSumX) * scale_x) + pan_x;
+      ScreenNegX = ((negPeakLoc + negPeakSubPixelLoc - wDataStartPos) * scale_x) + pan_x;
       ScreenNegX = constrain(ScreenNegX, 0, width-1);
       line(ScreenNegX, HALF_SCREEN_HEIGHT + subpixelMarkerLen, ScreenNegX, HALF_SCREEN_HEIGHT - subpixelMarkerLen);
       waterfallTop[int(ScreenNegX)] = color(255, 0, 0);
 
       // Mark subpixel center with white line
       stroke(255);
-      ScreenCenX = ((precisePosLowPass - shiftSumX) * scale_x) + pan_x;
+      ScreenCenX = ((precisePosLowPass - wDataStartPos) * scale_x) + pan_x;
       ScreenCenX = constrain(ScreenCenX, 0, width-1);
       line(ScreenCenX, HALF_SCREEN_HEIGHT + subpixelMarkerLen, ScreenCenX, HALF_SCREEN_HEIGHT - subpixelMarkerLen); 
       waterfallTop[int(ScreenCenX)] = color(255);
 
       // Mark posPeakSubPixelLoc with green line
       stroke(0, 255, 0);
-      ScreenPosX = ((posPeakLoc + posPeakSubPixelLoc - shiftSumX) * scale_x) + pan_x;
+      ScreenPosX = ((posPeakLoc + posPeakSubPixelLoc - wDataStartPos) * scale_x) + pan_x;
       ScreenPosX = constrain(ScreenPosX, 0, width-1);
       line(ScreenPosX, HALF_SCREEN_HEIGHT + subpixelMarkerLen, ScreenPosX, HALF_SCREEN_HEIGHT - subpixelMarkerLen);
       waterfallTop[int(ScreenPosX)] = color(0, 255, 0);
 
       // Mark negPeakLoc 3 pixel cluster with one red circle each
       stroke(255, 0, 0);
-      ellipse(((negPeakLoc - shiftSumX - 1) * scale_x) + pan_x, (HALF_SCREEN_HEIGHT - (negPeakLeftPixel * scale_y)), markSize, markSize);
-      ellipse(((negPeakLoc - shiftSumX - 0) * scale_x) + pan_x, (HALF_SCREEN_HEIGHT - (negPeakCenterPixel * scale_y)), markSize, markSize);
-      ellipse(((negPeakLoc - shiftSumX + 1) * scale_x) + pan_x, (HALF_SCREEN_HEIGHT - (negPeakRightPixel * scale_y)), markSize, markSize);
+      ellipse(((negPeakLoc - wDataStartPos - 1) * scale_x) + pan_x, (HALF_SCREEN_HEIGHT - (negPeakLeftPixel * scale_y)), markSize, markSize);
+      ellipse(((negPeakLoc - wDataStartPos) * scale_x) + pan_x, (HALF_SCREEN_HEIGHT - (negPeakCenterPixel * scale_y)), markSize, markSize);
+      ellipse(((negPeakLoc - wDataStartPos + 1) * scale_x) + pan_x, (HALF_SCREEN_HEIGHT - (negPeakRightPixel * scale_y)), markSize, markSize);
 
       // Mark posPeakLoc 3 pixel cluster with one green circle each
       stroke(0, 255, 0);
-      ellipse(((posPeakLoc - shiftSumX - 1) * scale_x) + pan_x, (HALF_SCREEN_HEIGHT - (posPeakLeftPixel * scale_y)), markSize, markSize);
-      ellipse(((posPeakLoc - shiftSumX - 0) * scale_x) + pan_x, (HALF_SCREEN_HEIGHT - (posPeakCenterPixel * scale_y)), markSize, markSize);
-      ellipse(((posPeakLoc - shiftSumX + 1) * scale_x) + pan_x, (HALF_SCREEN_HEIGHT - (posPeakRightPixel * scale_y)), markSize, markSize);
-      
+      ellipse(((posPeakLoc - wDataStartPos - 1) * scale_x) + pan_x, (HALF_SCREEN_HEIGHT - (posPeakLeftPixel * scale_y)), markSize, markSize);
+      ellipse(((posPeakLoc - wDataStartPos) * scale_x) + pan_x, (HALF_SCREEN_HEIGHT - (posPeakCenterPixel * scale_y)), markSize, markSize);
+      ellipse(((posPeakLoc - wDataStartPos + 1) * scale_x) + pan_x, (HALF_SCREEN_HEIGHT - (posPeakRightPixel * scale_y)), markSize, markSize);
     }
   }
 
@@ -769,19 +768,18 @@ class dataPlot { //<>//
     image(img, 0, height-imageHeight); // show the waterfall image prior to writing the subpixel text so the text is on top
     
     // print the text for the subpixel output values
-    offsetY = height-10;
-    
     fill(255);
-    text("neg Peak Location: " + negPeakLoc, 10, offsetY);
-    
-    offsetY -= dptextSizePlus2;
+    offsetY = height-10;
     text("pos SubPixel Location: " + String.format("%.3f", posPeakSubPixelLoc), 10, offsetY);
     
     offsetY -= dptextSizePlus2;
-    text("pos Peak Location: " + posPeakLoc, 10, offsetY);
+    text("neg SubPixel Location: " + String.format("%.3f", negPeakSubPixelLoc), 10, offsetY);
     
     offsetY -= dptextSizePlus2;
-    text("neg SubPixel Location: " + String.format("%.3f", negPeakSubPixelLoc), 10, offsetY);
+    text("neg Peak Location: " + negPeakLoc, 10, offsetY);
+    
+    offsetY -= dptextSizePlus2;
+    text("pos Peak Location: " + posPeakLoc, 10, offsetY);
     
     offsetY -= dptextSizePlus2;
     text("Subpixel Width: " + String.format("%.3f", preciseWidth), 10, offsetY);
@@ -812,6 +810,18 @@ class dataPlot { //<>//
       //println (noise(noiseInput));
     }
     return rdOut;
+  }
+  
+  float constrainFloat(float value, float min, float max){
+    float retVal;
+    if (value < min) {
+      retVal = min;
+    } else if (value > max) {
+      retVal = max;
+    } else{
+      retVal = value;
+    }
+    return retVal;
   }
   
   //double qinty(float ym1, float y0, float yp1) { // another subpixel fit function, not used, but here for reference
