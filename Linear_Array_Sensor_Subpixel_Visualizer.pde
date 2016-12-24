@@ -205,7 +205,7 @@ void setup() {
     noLoop();
     // Set up serial connection
     // Set to your Teensy COM port number to fix error, make sure it talks to Arduino software if stuck.
-    println(Serial.list());
+    printArray(Serial.list());
     
     //Linux
     //myPort = new Serial(this, "/dev/ttyACM0", 12500000);
