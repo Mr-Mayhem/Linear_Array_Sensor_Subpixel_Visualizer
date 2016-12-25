@@ -1,14 +1,35 @@
 class dataPlot {
   // by Douglas Mayhew 12/1/2016
   // Plots data and provides mouse sliding and zooming ability
+  // ==============================================================================================
+  // colors
   
+  final color COLOR_ORIGINAL_DATA = color(255);
+  final color COLOR_ORIGINAL_DATA_FADED = color(25);
+  final color COLOR_KERNEL_DATA = color(255, 255, 0);
+  final color COLOR_FIRST_DIFFERENCE = color(0, 255, 0);
+  final color COLOR_FIRST_DIFFERENCE_FADED = color(0, 50, 0);
+  final color COLOR_OUTPUT_DATA = color(255, 0, 255);
+  final color COLOR_OUTPUT_DATA_FADED = color(50, 0, 50);
+  
+  // other constants
+  // the number of bits data values consist of
+  final int ADC_BIT_DEPTH = 12;
+
+  // this value is 4095 for 12 bits
+  final int HIGHEST_ADC_VALUE = int(pow(2.0, float(ADC_BIT_DEPTH))-1); 
+  final float sensorPixelSpacing = 0.0635;           // 63.5 microns
+  final float sensorPixelsPerMM = 15.74803149606299; // number of pixels per mm in sensor TSL1402R and TSL1410R
+  final float sensorWidthAllPixels = 16.256;         // millimeters
+
+  // ==============================================================================================
   int dpXpos;                // dataPlot class init variables
   int dpYpos;
   int dpWidth;
   int dpHeight;
   int dpDataLen;
   int dpTextSize;
-  int dptextSizePlus2;
+  int dptextSizePlus2;       // used to space text height-wise
 
   float input;               // convolution input y value
   float cOutPrev;            // the previous convolution output y value
@@ -19,7 +40,7 @@ class dataPlot {
 
   int wDataStartPos;         // the index of the first data point
   int wDataStopPos;          // the index of the last data point
-  
+
   int outerPtrX = 0;         // outer loop pointer
   int innerPtrX = 0;         // inner loop pointer, used only during convolution
 
@@ -32,19 +53,20 @@ class dataPlot {
   float drawPtrX;            // phase correction drawing pointers
   float drawPtrXLessK;
   float drawPtrXLessKlessD1;
-  
+
   boolean modulateX;         // toggles the modulation on and off
   int modulationIndex;       // index to index through the modulation waveform
   float modulationX;         // added to x axis of data to simulate left right movement
   float lerpX;               // new y value in between adjacent x's, used to shift data in input array to simulate shadow motion
   int offsetY;               // temp variable to offset the y position (the height) of text
+
   // =============================================================================================
 
   // Subpixel Variables
   float negPeakLoc;          // x index position of greatest negative y difference peak found in 1st difference data
   float posPeakLoc;          // x index position of greatest positive y difference peak found in 1st difference data
 
-  float widthInPixels;         // integer difference between the two peaks without subpixel precision
+  float widthInPixels;       // integer difference between the two peaks without subpixel precision
 
   float negPeakVal;          // value of greatest negative y difference peak found in 1st difference data
   float posPeakVal;          // value of greatest positive y difference peak found in 1st difference data 
@@ -81,8 +103,8 @@ class dataPlot {
 
   int markSize;              // diameter of drawn subpixel marker circles
   int subpixelMarkerLen;     // length of vertical lines which indicate subpixel peaks and shadow center location
-  int movingAverageKernalSize; // Length of moving average filter used to smooth subpixel output
-  
+  int movingAvgKernalLen;    // Length of moving average filter used to smooth subpixel output
+
   // =============================================================================================
   // Waterfall variables
   float noiseInput;     // used for generating smooth noise for original data; lower values are smoother noise
@@ -106,11 +128,8 @@ class dataPlot {
 
   // array which feeds the waterfall display
   int[] waterfallTop = new int[0];
-  
-  // =============================================================================================
 
-  Legend Legend1;             // One Legend object, lists the colors and what they represent
-  Grid Grid1;                 // One Grid object, draws a grid
+  // =============================================================================================
   PanZoomX PanZoomPlot;       // pan/zoom object to control pan & zoom of main data plot
   MovingAverageFilter F1;     // filters the subpixel output data
 
@@ -123,7 +142,7 @@ class dataPlot {
     dpDataLen = plotDataLen;
     dpTextSize = TextSize;
     dptextSizePlus2 = dpTextSize + 2;
-    
+
     PanZoomPlot = new PanZoomX(p, plotDataLen);   // Create PanZoom object to pan & zoom the main data plot
 
     pan_x = PanZoomPlot.getPanX();  // initial pan and zoom values
@@ -150,18 +169,12 @@ class dataPlot {
     // must always match kernel length
     output = new float[KERNEL_LENGTH];
     waterfallTop = new int[width+1];  // feeds the waterfall display
-    
+
     // used for generating smooth noise for original data; lower values are smoother noise
     noiseInput = 0.1;
 
     // the increment of change of the noise input
     noiseIncrement = noiseInput;
-
-    // create the Legend object, which lists the colors and what they represent
-    Legend1 = new Legend(dpTextSize); 
-
-    // create the Grid object, which draws a grid
-    Grid1 = new Grid();
 
     imageWidth = width;
     imageHeight = height/4;
@@ -171,8 +184,10 @@ class dataPlot {
     if (signalSource == 5) {
       cameraImage = createImage(640, 60, RGB);
     }
-    movingAverageKernalSize = 7; // use odd size for even integer offset, default = 7;
-    F1 = new MovingAverageFilter(movingAverageKernalSize); // used to smooth the subpixel center position output
+
+    movingAvgKernalLen = 7;
+    // reduces jitter on subpixel precisePos, higher = more smoothing, default = 7;
+    F1 = new MovingAverageFilter(movingAvgKernalLen);
   }
 
   boolean overKernel() {
@@ -222,32 +237,31 @@ class dataPlot {
     scale_x = PanZoomPlot.getScaleX();
     pan_y = PanZoomPlot.getPanY();
     scale_y = PanZoomPlot.getScaleY();
-    
+
     drawGrid2(pan_x, ((wDataStopPos) * scale_x) + pan_x, 0, height-1 + pan_y, 32 * scale_x, 256 * scale_y);
-    
+
     // The minimum number of input data samples is two times the kernel length + 1,  which results in 
     // the minumum of only one sample processed. (we ignore the fist and last data by one kernel's width)
-    if (modulateX){
+    if (modulateX) {
       modulationIndex++; // increment the index to the sine wave array
-      if (modulationIndex > sineArray.length-1){
+      if (modulationIndex > sineArray.length-1) {
         modulationIndex = 0;
       }
       modulationX = sineArray[modulationIndex]; // value used to interpolate the data to simulate shadow movement
     }
-    
+
     wDataStartPos = 0;
     wDataStopPos = dpDataLen;
-    
+
     //wDataStartPos = constrain(wDataStartPos, 0, dpDataLen);
     //wDataStopPos = constrain(wDataStopPos, 0, dpDataLen);
-    
+
     if (signalSource == 3) {
-      
+
       // Plot using Serial data, remember to plug in Teensy 3.6 via usb programming cable and that sister sketch is running
       processSerialData();
-    
-  } else if (signalSource == 5) { 
-      
+    } else if (signalSource == 5) { 
+
       // Plot using Video data, make sure at least one camera is connected and enabled, resolution default set to 640 x 480
       video.loadPixels();
       cameraImage.loadPixels();
@@ -279,7 +293,7 @@ class dataPlot {
           cameraImage.pixels[setPixelIndex] = video.pixels[getPixelIndex];
         }
       }
-      
+
       cameraImage.updatePixels();
       float x = (cameraImage.width * scale_x);
       image(cameraImage, pan_x, 30, x, cameraImage.height);
@@ -293,24 +307,24 @@ class dataPlot {
     subpixelCalc(); // Subpixel calculations  
 
     waterfall(width, imageHeight); // update and draw the new waterfall image
-    
+
     offsetY = 45;
     fill(255);
     textAlign(CENTER);
     text("Use mouse to drag, mouse wheel to zoom", HALF_SCREEN_WIDTH, offsetY);
-    
+
     offsetY += dptextSizePlus2;
     text("pan_x: " + String.format("%.3f", pan_x) + "  scale_x: " + String.format("%.3f", scale_x), HALF_SCREEN_WIDTH, offsetY);
     textAlign(LEFT);
-    
+
     // Counts 1 to 60 and repeats, to provide a sense of the frame rate
     text(chartRedraws, 10, 50);
-    
+
     // draw actual frameRate
     text(frameRate, 50, 50);
-    
+
     // draw Legend and Kernel
-    Legend1.drawLegend();
+    drawLegend();
     drawKernel(0, SG1.kSigma);
   }
 
@@ -318,7 +332,7 @@ class dataPlot {
 
     // plot kernel data point
     stroke(COLOR_KERNEL_DATA);
-    
+
     for (outerPtrX = 0; outerPtrX < KERNEL_LENGTH; outerPtrX++) { 
       // shift outerPtrX left by half the kernel size to correct for convolution shift (dead-on correct for odd-size kernels)
       drawPtrXLessK = ((outerPtrX - HALF_KERNEL_LENGTH) * scale_x) + pan_x; 
@@ -332,10 +346,10 @@ class dataPlot {
     offsetY = height-10;
     textAlign(CENTER);
     text("Use mouse wheel here to adjust kernel", HALF_SCREEN_WIDTH, offsetY);
-    
+
     offsetY -= dptextSizePlus2;
     text("Kernel Sigma: " + String.format("%.2f", sigma), HALF_SCREEN_WIDTH, offsetY);
-    
+
     offsetY -= dptextSizePlus2;
     text("Kernel Length: " + KERNEL_LENGTH, HALF_SCREEN_WIDTH, offsetY);
     textAlign(LEFT);
@@ -368,7 +382,7 @@ class dataPlot {
       // parse two pixel data values from the serial port data byte array:
       // Read a pair of bytes from the byte array, convert them into an integer, 
       // shift right 2 places(divide by 4), and copy the value to a simple global variable
-      
+
       input = (byteArray[outerPtrX<<1]<< 8 | (byteArray[(outerPtrX<<1) + 1] & 0xFF))>>2;
       //if (!modulateX){
       //  input = (byteArray[outerPtrX<<1]<< 8 | (byteArray[(outerPtrX<<1) + 1] & 0xFF))>>2;
@@ -376,7 +390,7 @@ class dataPlot {
       //  input = lerp((byteArray[outerPtrX<<1]<< 8 | (byteArray[(outerPtrX<<1) + 1] & 0xFF))>>2, 
       //  (byteArray[(outerPtrX+1)<<1]<< 8 | (byteArray[((outerPtrX+1)<<1) + 1] & 0xFF))>>2, modulationX);
       //}
-      
+
       // plot original data value
       stroke(COLOR_ORIGINAL_DATA);
 
@@ -427,13 +441,13 @@ class dataPlot {
       // copy one data value from the video array, which contains a row of color video integers
       // convert color pixel to greyscale, and multiply by 8 to bring the levels up. 
       input = Pixelbrightness(videoArray[outerPtrX]) * 8; // 3 camera values of 255 max = 765 * 8 = 6120, = 13 bits, roughly
-      
+
       //if (!modulateX){
       //  input = Pixelbrightness(videoArray[outerPtrX]) * 8;
       //}else{
       //  input = lerp(Pixelbrightness(videoArray[outerPtrX]) * 8, Pixelbrightness(videoArray[outerPtrX + 1]) * 8, modulationX);
       //}
-      
+
       // plot original data value
       stroke(COLOR_ORIGINAL_DATA);
 
@@ -456,7 +470,7 @@ class dataPlot {
       }
     }
   }
-  
+
   void processSignalGeneratorData() {
 
     int outerCount = 0;
@@ -482,12 +496,12 @@ class dataPlot {
       drawPtrXLessKlessD1 = (((outerCount - HALF_KERNEL_LENGTH) - 0.5) * scale_x) + pan_x;
 
       // copy one data value from the signal generator output array:
-      if (!modulateX){
+      if (!modulateX) {
         input = sigGenOutput[outerPtrX];
-      }else{
+      } else {
         input = lerp(sigGenOutput[outerPtrX], sigGenOutput[outerPtrX+1], modulationX);
       }
-      
+
       // plot original data value
       stroke(COLOR_ORIGINAL_DATA);
 
@@ -498,7 +512,7 @@ class dataPlot {
       convolutionInnerLoop(); // Convolution Inner Loop
 
       if (outerCount > KERNEL_LENGTH_MINUS1) {  // Skip one kernel length of convolution output values, 
-      // which are garbage due to the kernel not being fully immersed in the input signal.
+        // which are garbage due to the kernel not being fully immersed in the input signal.
         // plot the output data value
         stroke(COLOR_OUTPUT_DATA);
         point(drawPtrXLessK, HALF_SCREEN_HEIGHT - (cOut * scale_y));
@@ -511,7 +525,7 @@ class dataPlot {
       }
     }
   }
-  
+
   void convolutionInnerLoop() {
     // ================================= Convolution Inner Loop  =============================================
     // I 'invented' this convolution algorithm during experimentation in December 2016. Inner loops have probably been 
@@ -631,7 +645,7 @@ class dataPlot {
     precisePos = 0;
     negPeakSubPixelLoc = 0;
     posPeakSubPixelLoc = 0;
-    
+
     // set the 3 previous waterfall top row subpixel color markers back to black, 
     // because we set new ones below.
     waterfallTop[int(ScreenNegX)] = 0; 
@@ -675,7 +689,7 @@ class dataPlot {
 
       F1.nextValue(precisePos);
       precisePosLowPass = F1.getAverage();
-      
+
       // keep the center from lagging too far; keep it between the left and right peaks during rapid shadow movement
       precisePosLowPass = constrainFloat(precisePosLowPass, negPeakLoc, posPeakLoc);
 
@@ -762,34 +776,34 @@ class dataPlot {
         img.pixels[setPixelIndex] = img.pixels[getPixelIndex];
       }
     }
-    
+
     img.updatePixels();
-    
+
     image(img, 0, height-imageHeight); // show the waterfall image prior to writing the subpixel text so the text is on top
-    
+
     // print the text for the subpixel output values
     fill(255);
     offsetY = height-10;
     text("pos SubPixel Location: " + String.format("%.3f", posPeakSubPixelLoc), 10, offsetY);
-    
+
     offsetY -= dptextSizePlus2;
     text("neg SubPixel Location: " + String.format("%.3f", negPeakSubPixelLoc), 10, offsetY);
-    
+
     offsetY -= dptextSizePlus2;
     text("neg Peak Location: " + negPeakLoc, 10, offsetY);
-    
+
     offsetY -= dptextSizePlus2;
     text("pos Peak Location: " + posPeakLoc, 10, offsetY);
-    
+
     offsetY -= dptextSizePlus2;
     text("Subpixel Width: " + String.format("%.3f", preciseWidth), 10, offsetY);
-    
+
     offsetY -= dptextSizePlus2;
     text("Width in mm: " + String.format("%.5f", preciseWidthMM), 10, offsetY);
-    
+
     offsetY -= dptextSizePlus2;
     text("Subpixel Center Position = " + String.format("%.3f", precisePosLowPass), 10, offsetY);
-    
+
     offsetY -= dptextSizePlus2;
     text("Center Position in mm: " + String.format("%.5f", preciseMMPos), 10, offsetY);
   }
@@ -811,19 +825,113 @@ class dataPlot {
     }
     return rdOut;
   }
-  
-  float constrainFloat(float value, float min, float max){
+
+  float constrainFloat(float value, float min, float max) {
     float retVal;
     if (value < min) {
       retVal = min;
     } else if (value > max) {
       retVal = max;
-    } else{
+    } else {
       retVal = value;
     }
     return retVal;
   }
+
+  void drawLegend() {
+
+    int rectX, rectY, rectWidth, rectHeight;
+
+    rectX = 10;
+    rectY = 65;
+    rectWidth = 10;
+    rectHeight = 10;
+
+    // draw a legend showing what each color represents
+    strokeWeight(1);
+
+    stroke(COLOR_ORIGINAL_DATA);
+    fill(COLOR_ORIGINAL_DATA);
+    rect(rectX, rectY, rectWidth, rectHeight);
+    fill(255);
+    text("Original input data", rectX + 20, rectY + 10);
+
+    rectY += dptextSizePlus2;
+    stroke(COLOR_KERNEL_DATA);
+    fill(COLOR_KERNEL_DATA);
+    rect(rectX, rectY, rectWidth, rectHeight);
+    fill(255);
+    text("Convolution kernel", rectX + 20, rectY + 10);
+
+    rectY += dptextSizePlus2;
+    stroke(COLOR_OUTPUT_DATA);
+    fill(COLOR_OUTPUT_DATA);
+    rect(rectX, rectY, rectWidth, rectHeight);
+    fill(255);
+    text("Smoothed convolution output data", rectX + 20, rectY + 10);
+
+    rectY += dptextSizePlus2;
+    stroke(COLOR_FIRST_DIFFERENCE);
+    fill(COLOR_FIRST_DIFFERENCE);
+    rect(rectX, rectY, rectWidth, rectHeight);
+    fill(255);
+    text("1st difference of convolution output data", rectX + 20, rectY + 10);
+  }
+
+  void drawGrid(float gWidth, float gHeight, float divisor)
+  {
+    float widthSpace = gWidth/divisor;   // Number of Vertical Lines
+    float heightSpace = gHeight/divisor; // Number of Horozontal Lines
+
+    strokeWeight(1);
+    stroke(25, 25, 25); // White Color
+
+    // Draw vertical
+    for (int i=0; i<gWidth; i+=widthSpace) {
+      line(i, 0, i, gHeight);
+    }
+    // Draw Horizontal
+    for (int w=0; w<gHeight; w+=heightSpace) {
+      line(0, w, gWidth, w);
+    }
+  }
+
+  void drawGrid2(float startX, float stopX, float startY, float stopY, float spacingX, float spacingY) {
+
+    strokeWeight(1);
+    stroke(20, 20, 20); // White Color
+    for (float x = startX; x <= stopX; x += spacingX) {
+      line(x, startY, x, stopY);
+    }
+    for (float y = startY; y <= stopY; y += spacingY) {
+      line(startX, y, stopX, y);
+    }
+  }
   
+  int grey(color p) {
+    return max((p >> 16) & 0xff, (p >> 8) & 0xff, p & 0xff);
+  }
+  
+  int Pixelbrightness(color p) {
+  
+    int r = (p >> 16) & 0xff;
+    int g = (p >> 8) & 0xff;
+    int b = p & 0xff;
+    int value = 299*(r) + 587*(g) + 114*(b);
+  
+    if (value > 0) {
+      value = value/1000;
+    } else {
+      value = 0;
+    }
+  
+    return value;
+  }
+  
+  color ScaledColorFromInt(int value, int MaxValueRef) {
+    return color(map(value, 0, MaxValueRef, 0, 255));
+  }
+
   //double qinty(float ym1, float y0, float yp1) { // another subpixel fit function, not used, but here for reference
   ////QINT - quadratic interpolation of three adjacent samples
   ////[p,y,a] = qint(ym1,y0,yp1) 
@@ -832,52 +940,52 @@ class dataPlot {
   //// of a parabolic fit through three points. 
   //// Parabola is given by y(x) = a*(x-p)^2+b, 
   //// where y(-1)=ym1, y(0)=y0, y(1)=yp1. 
-  
+
   //double p = (yp1 - ym1)/(2*(2*y0 - yp1 - ym1));
   ////double y = y0 - 0.25*(ym1-yp1)*p;
   ////float a = 0.5*(ym1 - 2*y0 + yp1);
-  
+
   //return p;
   //}
-  
+
   //int[] FindEdges(){
   //  // a function  for future use perhaps, otherwise ignore.
   //  // Edge finder for use after gaussianLaplacian convolution
   //  // Set kernel to gaussianLaplacian 
-    
+
   //  // This function is part of the JFeatureLib project: https://github.com/locked-fg/JFeatureLib
   //  // I refactored it for 1d use, (the original is for 2d photos or images) and made other
   //  // changes to make it follow my way of doing things here.
-  
+
   //  // ZeroCrossing is an algorithm to find the zero crossings in an image 
   //  // original author: Timothy Sharman 
-    
+
   //  // Find the zero crossings
   //  // If when neighbouring points are multiplied the result is -ve then there 
   //  // must be a change in sign between these two points. 
   //  // If the change is also above the thereshold then set it as a zero crossing.   
-    
+
   //  // I played with this code for sake of learning, but I don't expect to use it
   //  // unless I can find a sub-pixel method to go with it. 
-    
+
   //  // Using the 1st derivative is preferable to using this 2nd derivative edge 
   //  // finding method, because this 2nd derivative edge finder works at pixel resolution 
   //  // only; there is not a sub-pixel method for it that I am aware of (yet). Whereas, the 
   //  // peaks present in the first derivative can be prpcessed with various sub-pixel
   //  // routines via many different methods, such as a fitting a parabola to the top 3 
   //  // points (quadratic interpolation), gaussuan estimation, linear regression, etc.
-  
+
   //  // To find the zero crossings in the image after applying the LOG kernel you must check 
   //  // each point in the array to see if it lies on a zero crossing
   //  // This is done by checking the neighbours around the pixel.
-  
+
   //  int outerPtrXMinus1 = outerPtrX -1;
   //  int outerPtrXPlus1 = outerPtrX + 1;
   //  int edgeLimit = 10;
   //  int edgeThresh = 64;
   //  boolean edgeLimiter = false;
   //  int[] edges = new int[dpDataLen];
-    
+
   //  if (outerPtrX > 0 && outerPtrXMinus1 < SENSOR_PIXELS) { 
   //    if(edgeLimiter){ 
   //      edgeThresh = edgeLimit; 
@@ -885,7 +993,7 @@ class dataPlot {
   //      edgeThresh = 0; 
   //    }
   //  }
-  
+
   //  if(output[outerPtrXMinus1]*output[outerPtrXPlus1] < 0){ 
   //    if(Math.abs(output[outerPtrXMinus1]) + Math.abs(output[outerPtrXPlus1]) > edgeThresh){ 
   //       edges[outerPtrXMinus1] = 255;   // white
@@ -901,7 +1009,7 @@ class dataPlot {
   //  } else { 
   //    edges[outerPtrXMinus1] = 0; 
   //  } 
-   
+
   //return edges;
   //}
 }

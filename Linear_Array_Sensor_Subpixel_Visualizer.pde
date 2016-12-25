@@ -79,32 +79,10 @@ import processing.serial.*;
 import processing.video.*;
 
 // ==============================================================================================
-// colors
-
-color COLOR_ORIGINAL_DATA = color(255);
-color COLOR_ORIGINAL_DATA_FADED = color(25);
-color COLOR_KERNEL_DATA = color(255, 255, 0);
-color COLOR_FIRST_DIFFERENCE = color(0, 255, 0);
-color COLOR_FIRST_DIFFERENCE_FADED = color(0, 50, 0);
-color COLOR_OUTPUT_DATA = color(255, 0, 255);
-color COLOR_OUTPUT_DATA_FADED= color(50, 0, 50);
-
-// ==============================================================================================
 // Constants:
-
-// the number of bits data values consist of
-final int ADC_BIT_DEPTH = 12;
-
-// this value is 4095 for 12 bits
-final int HIGHEST_ADC_VALUE = int(pow(2.0, float(ADC_BIT_DEPTH))-1); 
 
 // unique byte used to sync the filling of byteArray to the incoming serial stream
 final int PREFIX = 0xFF;
-
-final float sensorPixelSpacing = 0.0635;           // 63.5 microns
-final float sensorPixelsPerMM = 15.74803149606299; // number of pixels per mm in sensor TSL1402R and TSL1410R
-final float sensorWidthAllPixels = 16.256;         // millimeters
-
 // ==============================================================================================
 // Arrays:
 
@@ -129,7 +107,7 @@ int HALF_KERNEL_LENGTH;              // Half the kernel length, used to correct 
 int bytesRead;                       // number of bytes actually read out from the serial buffer
 int availableBytesDraw;              // used to show the number of bytes present in the serial buffer
 int gtextSize;                       // sizes all text, consumed by this page, dataplot class, legend class
-int chartRedraws = 0;                 // used to count sensor data frames
+int chartRedraws = 0;                // used to count sensor data frames
 
 // ==============================================================================================
 // Set Objects
@@ -147,13 +125,13 @@ void setup() {
   //size(1280, 800);
   // Set the data & screen scaling:
   // You are encouraged to adjust these, especially to 'zoom in' to the shadow location see the subpixel details better.
-  
+
   // leave alone! Used in many places to center data at center of screen, width-wise
   HALF_SCREEN_WIDTH = width / 2;
 
   // leave alone! Used in many places to center data at center of screen, height-wise
   HALF_SCREEN_HEIGHT = height / 2;
-  
+
   // set the screen dimensions
   //surface.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);
   gtextSize = 9; // sizes all text, consumed by this page, dataplot class, legend class to space text y using this value plus padding
@@ -165,11 +143,11 @@ void setup() {
   textSize(gtextSize);
   println("SCREEN_WIDTH: " + width);
   println("SCREEN_HEIGHT: " + height);
-  
+
   // ============================================================================================
   // 0 is default, dynamically created gaussian kernel
   kernelSource = 0; // <<< <<< Choose a kernel source (0 = dynamically created gaussian "bell curve"):
-  
+
   // Create a kernelGenerator object, which creates a kernel and saves it's data into an array
   // 0: dynamically created gaussian kernel
   // 1: hard-coded gaussuan kernel (manually typed array values)
@@ -177,9 +155,9 @@ void setup() {
 
   // ============================================================================================
   // You are encouraged to try different signal sources to feed the system
- 
-  signalSource = 0;  // <<< <<< Choose a signal source; 
-  
+
+  signalSource = 1;  // <<< <<< Choose a signal source; 
+
   // 0: manually typed array data
   // 1: square impulse
   // 2: square wave 
@@ -189,13 +167,13 @@ void setup() {
   // 6: sine wave
   // 7: one cycle sine wave
   // =============================================================================================
-   
+
   // Create a dataPlot object, which plots data and provides mouse sliding and zooming ability
   SG1 = new SignalGenerator(1.4);
   SG1.setKernelSource(kernelSource);
   sigGenOutput = SG1.signalGeneratorOutput(signalSource, 256, 1000); // data source, num of data points, height of peaks
   sineArray = SG1.oneCycleSineWaveFloats(256); // values used to move x to and fro as "modulation"
-  
+
   // Create the dataPlot object, which handles plotting data with mouse sliding and zooming ability
   // dataStop set not past SENSOR_PIXELS, rather than SENSOR_PIXELS + KERNEL_LENGTH, to prevent convolution garbage at end 
   // from partial kernel immersion
@@ -206,15 +184,15 @@ void setup() {
     // Set up serial connection
     // Set to your Teensy COM port number to fix error, make sure it talks to Arduino software if stuck.
     printArray(Serial.list());
-    
+
     //Linux
     //myPort = new Serial(this, "/dev/ttyACM0", 12500000);
-    
+
     //Windows
     myPort = new Serial(this, "COM5", 12500000);
     // the serial port will buffer until prefix (unique byte that equals 255) and then fire serialEvent()
     myPort.bufferUntil(PREFIX);
-    myPort.clear();
+    myPort.clear(); // prevents bad sync glitch from happening, empties buffer on start
   }
   if (signalSource == 5) {
     noLoop();
@@ -233,37 +211,6 @@ void serialEvent(Serial p) {
 void captureEvent(Capture video) {
   video.read();
   redraw();
-}
-
-void draw() {
-
-  chartRedraws++;
-
-  if (chartRedraws >= 60) {
-    chartRedraws = 0;
-    // save a sensor data frame to a text file every 60 sensor frames
-    //String[] stringArray = new String[SENSOR_PIXELS];
-    //for(outerPtrX=0; outerPtrX < SENSOR_PIXELS; outerPtrX++) { 
-    //   stringArray[outerPtrX] = str(output[outerPtrX]);
-    //}
-    //   saveStrings("Pixel_Values.txt", stringArray);
-  }
-  
-  // Plot the Data using the DataPlot object
-  DP1.display();
-
-}
-
-void keyPressed() {
-  DP1.keyPressed();
-}
-
-void mouseDragged() {
-  DP1.mouseDragged();
-}
-
-void mouseWheel(MouseEvent event) {
-  DP1.mouseWheel(-event.getCount()); // note the minus sign (-) inverts the mouse wheel output direction
 }
 
 void prepVideoMode() {
@@ -290,27 +237,33 @@ void prepVideoMode() {
     //surface.setSize(video.width, video.height);
   }
 }
-
-int grey(color p) {
-  return max((p >> 16) & 0xff, (p >> 8) & 0xff, p & 0xff);
-}
-
-int Pixelbrightness(color p) {
   
-  int r = (p >> 16) & 0xff;
-  int g = (p >> 8) & 0xff;
-  int b = p & 0xff;
-  int value = 299*(r) + 587*(g) + 114*(b);
-  
-  if (value > 0) {
-    value = value/1000;
-  }else{
-    value = 0;
+void draw() {
+
+  chartRedraws++;
+
+  if (chartRedraws >= 60) {
+    chartRedraws = 0;
+    // save a sensor data frame to a text file every 60 sensor frames
+    //String[] stringArray = new String[SENSOR_PIXELS];
+    //for(outerPtrX=0; outerPtrX < SENSOR_PIXELS; outerPtrX++) { 
+    //   stringArray[outerPtrX] = str(output[outerPtrX]);
+    //}
+    //   saveStrings("Pixel_Values.txt", stringArray);
   }
-  
-  return value;
+
+  // Plot the Data using the DataPlot object
+  DP1.display();
 }
 
-color ScaledColorFromInt(int value, int MaxValueRef){
-  return color(map(value, 0, MaxValueRef, 0, 255));
+void keyPressed() {
+  DP1.keyPressed();
+}
+
+void mouseDragged() {
+  DP1.mouseDragged();
+}
+
+void mouseWheel(MouseEvent event) {
+  DP1.mouseWheel(-event.getCount()); // note the minus sign (-) inverts the mouse wheel output direction
 }
