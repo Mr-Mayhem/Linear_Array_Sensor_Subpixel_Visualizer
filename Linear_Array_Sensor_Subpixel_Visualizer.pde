@@ -1,11 +1,19 @@
 /*
-Linear_Array_Sensor_Subpixel_Visualizer.pde, a demo of subpixel resolution shadow position measurement and visualization,
- using a TSL1402R or TSL1410R linear photodiode array via serial port, or synthesized waveforms.
- 
- The shadow positions reported in the text display assume the first sensor pixel is pixel number 1.
+ Linear_Array_Sensor_Subpixel_Visualizer.pde, Subpixel resolution shadow position measurement and visualization,
+ using a TSL1402R or TSL1410R linear photodiode array via serial port, video line-grab, or internally generated 
+ waveforms.
  
  Created by Douglas Mayhew, November 20, 2016.
  
+ Plots sensor or simulated data, convolves it to smooth it using an adjustable gaussian kernel, 
+ plots the convolution output and the first differences of that output, and finds all shadows 
+ or simulated shadows and reports their position with subpixel accuracy using quadratic interpolation.
+   
+ The shadow positions reported in the text display assume the first sensor pixel is pixel number 1.
+ Shadows create one negative peak followed by one positive peak in the 1st difference plot.
+ Simple mods are coming shortly for use in finding spectra peaks or laser peaks, etc, which are single peak,
+ not double-peaked like the shadows, so need a slightly different peak finder. 
+
  Released into the public domain, except:
  * The function, 'makeGaussKernel1d' is made available as part of the book 
  * "Digital Image * Processing - An Algorithmic Introduction using Java" by Wilhelm Burger
@@ -26,23 +34,20 @@ Linear_Array_Sensor_Subpixel_Visualizer.pde, a demo of subpixel resolution shado
  RR 2724, INRIA, nov. 1995
  http://dev.ipol.im/~morel/Dossier_MVA_2011_Cours_Transparents_Documents/2011_Cours1_Document1_1995-devernay--a-non-maxima-suppression-method-for-edge-detection-with-sub-pixel-accuracy.pdf
  
- quadratic interpolation subpixel code is my rework of many 'remixes' of the 
- Filament Width Sensor Prototype by flipper, as well as my own ideas to show the inner workings via graphics.
- I also added center position code, as all the filament width sensor projects seemed to only output the width 
- of the shadow.
+ The subpixel code has evolved quite a bit since I last first saw an example in a filiment width sensor:
  
  see Filament Width Sensor Prototype by flipper:
  https://www.thingiverse.com/thing:454584
  
- Another example filament width sensor with quadratic interpolation subpixel code is the "Zabe Width Sensor"
- see Filament Width Sensor - TSL1402R + Arduino Mega (Work-in-progress):
- https://www.thingiverse.com/thing:668377
- 
+
  This sketch is able to run the subpixel position code against various data sources. 
  The sketch can synthesize test data like square impulses, to verify that the output is 
- doing what it should, but this sketch is mainly concerned with displaying and measuring 
- shadow positions in live sensor serial data from a TSL1402R or TSL1410R linear photodiode array. 
- To feed this sketch with data from these sensors, see my 2 related projects:
+ reporting what it should and outputs are phased correctly relative to each other, 
+ but this sketch is mainly concerned with displaying and measuring 
+ shadow positions in live sensor serial data from a TSL1402R or TSL1410R linear photodiode array,
+ or from a video camera line-grab across the middle of the video frame. 
+ 
+ To feed this sketch with data from the TSL1402R or TSL1410R sensors, see my 2 related projects:
  
  Read-TSL1402R-Optical-Sensor-using-Teensy-3.x
  https://github.com/Mr-Mayhem/Read-TSL1402R-Optical-Sensor-using-Teensy-3.x
@@ -52,7 +57,14 @@ Linear_Array_Sensor_Subpixel_Visualizer.pde, a demo of subpixel resolution shado
  Read-TSL1410R-Optical-Sensor-using-Teensy-3.x
  https://github.com/Mr-Mayhem/Read-TSL1410R-Optical-Sensor-using-Teensy-3.x
  
- This is a work in progress, but the subpixel code works nicely, and looks like it is proper.
+ This is a work in progress, but the subpixel code works nicely, and keeps evolving.
+ I tried to keep it fast as possible. If you want higher speed, turn off the display of
+ plots, and other unnecessary graphics. Also, the TSL1402R, being 1/5 the size of the TSL1410R, 
+ is 5 times faster. So if you really don't need the 1280 pixel width of the TSL1410R, use the
+ 256 pixel TSL1402R. There are others in-between, but I haven't played with them yet, but
+ converting the Teensy Arduino library and this sketch to differenct pixel counts is trivial, which is what
+ I did to support the TSL1410R with it's own Teensy arduino library.
+ 
  If you find any bugs, let me know via github or the Teensy forums in the following thread:
  https://forum.pjrc.com/threads/39376-New-library-and-example-Read-TSL1410R-Optical-Sensor-using-Teensy-3-x
  
@@ -68,9 +80,12 @@ Linear_Array_Sensor_Subpixel_Visualizer.pde, a demo of subpixel resolution shado
  for additional subpixel accuracy, or a faster solution - multiple slits casting shadows 
  and averaging the shadow subpixel positions.
  5. Add data window zoom and scrolling ***(Done!)***
- 6. Add measurement history display
+ 6. Add measurement waterfall history display  ***(Done!)***
  7. Bringing the core of the position and subpixel code into Arduino for Teensy 3.6
- 8. data averaging two or more frames or sub-frames (windowed processing)
+ 8. data averaging two or more frames or sub-frames (windowed processing)  ***(Done, but commented out for speed,
+    Also commented out because Teensy 3.6 has ADC averaging, so probably a redundant capability)***
+ 9. Collect and display unlimited number of shadows ***(Done!)*** Try a square wave or putting a comb over the 
+    sensor with a light above.
  */
 // ==============================================================================================
 // imports:
@@ -156,7 +171,7 @@ void setup() {
   // ============================================================================================
   // You are encouraged to try different signal sources to feed the system
 
-  signalSource = 1;  // <<< <<< Choose a signal source; 
+  signalSource = 2;  // <<< <<< Choose a signal source; 
 
   // 0: manually typed array data
   // 1: square impulse
@@ -179,17 +194,20 @@ void setup() {
   // from partial kernel immersion
   DP1 = new dataPlot(this, 0, 0, width, HALF_SCREEN_HEIGHT, SENSOR_PIXELS, gtextSize); 
   DP1.modulateX = true; // apply simulated shadow movement, half a pixel left and right in a sine wave motion
+  DP1.diffThresholdY = 64; // absolute value 1st difference peaks must reach to be detected
   if (signalSource == 3) {
     noLoop();
     // Set up serial connection
     // Set to your Teensy COM port number to fix error, make sure it talks to Arduino software if stuck.
+    println("List of Serial Ports:");
     printArray(Serial.list());
-
+    println("End of Serial Port List");
+    
     //Linux
-    //myPort = new Serial(this, "/dev/ttyACM0", 12500000);
+    myPort = new Serial(this, "/dev/ttyACM0", 12500000);
 
     //Windows
-    myPort = new Serial(this, "COM5", 12500000);
+    //myPort = new Serial(this, "COM5", 12500000);
     // the serial port will buffer until prefix (unique byte that equals 255) and then fire serialEvent()
     myPort.bufferUntil(PREFIX);
     myPort.clear(); // prevents bad sync glitch from happening, empties buffer on start
