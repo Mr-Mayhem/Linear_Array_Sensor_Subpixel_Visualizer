@@ -204,10 +204,10 @@ void setup() {
     println("End of Serial Port List");
     
     //Linux
-    myPort = new Serial(this, "/dev/ttyACM0", 12500000);
+    //myPort = new Serial(this, "/dev/ttyACM0", 12500000);
 
     //Windows
-    //myPort = new Serial(this, "COM5", 12500000);
+    myPort = new Serial(this, "COM5", 12500000);
     // the serial port will buffer until prefix (unique byte that equals 255) and then fire serialEvent()
     myPort.bufferUntil(PREFIX);
     myPort.clear(); // prevents bad sync glitch from happening, empties buffer on start
