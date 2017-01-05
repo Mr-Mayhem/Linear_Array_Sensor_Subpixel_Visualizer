@@ -136,8 +136,8 @@ Capture video;       // create video capture object named video
 void setup() {
   // Set a size or fullScreen:
   //fullScreen();
-  size(640, 480);
-  //size(1280, 800);
+  //size(640, 480);
+  size(1280, 800);
   // Set the data & screen scaling:
   // You are encouraged to adjust these, especially to 'zoom in' to the shadow location see the subpixel details better.
 
@@ -183,16 +183,23 @@ void setup() {
   // 7: one cycle sine wave
   // =============================================================================================
 
-  // Create a dataPlot object, which plots data and provides mouse sliding and zooming ability
-  SG1 = new SignalGenerator(1.4);
+  // Create a dataPlot object, which plots all data, and provides mouse sliding and zooming ability via
+  // a PanZoom object, and a waterfall display flowing downwards from various output plots.
+  SG1 = new SignalGenerator(this, 1.4);
   SG1.setKernelSource(kernelSource);
-  sigGenOutput = SG1.signalGeneratorOutput(signalSource, 256, 1000); // data source, num of data points, height of peaks
+  sigGenOutput = SG1.signalGeneratorOutput(signalSource, 256, 12, 32); // data source, num of data points, height of peaks
   sineArray = SG1.oneCycleSineWaveFloats(256); // values used to move x to and fro as "modulation"
 
   // Create the dataPlot object, which handles plotting data with mouse sliding and zooming ability
   // dataStop set not past SENSOR_PIXELS, rather than SENSOR_PIXELS + KERNEL_LENGTH, to prevent convolution garbage at end 
   // from partial kernel immersion
-  DP1 = new dataPlot(this, 0, 0, width, HALF_SCREEN_HEIGHT, SENSOR_PIXELS, gtextSize); 
+  if (signalSource == 5) {
+      // camera with 8 bit samples
+      DP1 = new dataPlot(this, 0, 0, width, HALF_SCREEN_HEIGHT, SENSOR_PIXELS, 12, gtextSize);
+  } else { // assume 12 bit samples
+      DP1 = new dataPlot(this, 0, 0, width, HALF_SCREEN_HEIGHT, SENSOR_PIXELS, 12, gtextSize);
+  }
+
   DP1.modulateX = true; // apply simulated shadow movement, half a pixel left and right in a sine wave motion
   DP1.diffThresholdY = 64; // absolute value 1st difference peaks must reach to be detected
   if (signalSource == 3) {
@@ -203,20 +210,52 @@ void setup() {
     printArray(Serial.list());
     println("End of Serial Port List");
     
+    // Serial Settings =============================================================================
+    
     //Linux
-    //myPort = new Serial(this, "/dev/ttyACM0", 12500000);
+    // Insure to follow the Teensy instructions on adding rules for serial to work in linux.
+    // https://www.pjrc.com/teensy/td_download.html#linux_issues
+    
+    // Second, if this sketch connects error-free but freezes up at the first frame:
+    
+    // 1. Press the Processing stop button,
+    // 2. Unplug the usb wire from the Teensy, and plug it back in. Note processing display window closes.
+    // 3. Open the Arduino IDE and then the Arduino serial monitor, and then close it.
+    // 4. Unplug the usb wire again, and plug it back in. Note the serial monitro window closes
+    // 5. Try to run this sketch again, the frames should now be updating and plotting incoming data. 
+    
+    // This was the only way I was able to fix this bug.
+    // This bug is mentioned in the link above with the following description:
+    
+    // Windows & Linux: When using the Serial Monitor with the USB Keyboard/Mouse option, 
+    // sometimes a "teensy gateway communication error" can occur. 
+    // Close and reopen the serial monitor to regain communication. 
+    myPort = new Serial(this, "/dev/ttyACM0", 12500000);
 
     //Windows
-    myPort = new Serial(this, "COM5", 12500000);
+    //myPort = new Serial(this, "COM5", 12500000);
+    
+    // =============================================================================================
+    //delay(100);
+
+    //setSerialPortBits();
+    
     // the serial port will buffer until prefix (unique byte that equals 255) and then fire serialEvent()
     myPort.bufferUntil(PREFIX);
     myPort.clear(); // prevents bad sync glitch from happening, empties buffer on start
+
+    
   }
   if (signalSource == 5) {
     noLoop();
     frameRate(120); // cheap cameras are 30, but we aim a little higher so internals are not 'lazy'
   }
 }
+
+//void setSerialPortBits(){
+    //myPort.setDTR(true); //or true
+    //myPort.setRTS(false); //or true
+//}
 
 void serialEvent(Serial p) { 
   // copy one complete sensor frame of data, plus the prefix byte, into byteArray[]
@@ -231,31 +270,7 @@ void captureEvent(Capture video) {
   redraw();
 }
 
-void prepVideoMode() {
-  String[] cameras = Capture.list();
 
-  if (cameras == null) {
-    println("Failed to retrieve the list of available cameras, will try the default...");
-  } 
-  if (cameras.length == 0) {
-    println("There are no cameras available for capture.");
-    exit();
-  } else {
-    println("Available cameras:");
-
-    for (int i = 0; i < cameras.length; i++) {
-      println(i + cameras[i]);
-    }
-    video = new Capture(this, 640, 480);
-    //video = new Capture(this, cameras[0]);
-    // Start capturing the images from the camera
-    video.start();
-    SENSOR_PIXELS = video.width;
-    videoArray = new int[SENSOR_PIXELS];
-    //surface.setSize(video.width, video.height);
-  }
-}
-  
 void draw() {
 
   chartRedraws++;

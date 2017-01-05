@@ -2,37 +2,42 @@ class SignalGenerator {
   // by Douglas Mayhew 12/1/2016
   // This class draws the legend
 
-  float noiseInput;     // used for generating smooth noise for original data; lower values produce smoother noise
-  float noiseIncrement; // the increment of change of the noise input
+  int adcBitDepth;        // number of bits used to represent the signal
+  int highestADCValue;    // signal value ceiling, 2 to the power of bitDepth -1
+  int signalAmplitude;    // Amplitude or total height of the waves
 
-// ========== Kernel Generation Variables (kernel generator moved to this class to reduce code redundancy) ===========
-  double kSigma;        // input to dynamically created kernel function, controls sigma or 'spread' of gaussian kernel
-  double kSigmaDefault; // the default value is set on class init
-  
+  float noiseInput;       // used for generating smooth noise for original data; lower values produce smoother noise
+  float noiseIncrement;   // the increment of change of the noise input
+
+  // ========== Kernel Generation Variables (kernel generator moved to this class to reduce code redundancy) ===========
+  double kSigma;          // input to dynamically created kernel function, controls sigma or 'spread' of gaussian kernel
+  double kSigmaDefault;   // the default value is set on class init
+
   double kSigmaGaussianMin;
   double kSigmaGaussianMax;
-  
+
   double kSigmaLOGMin;
   double kSigmaLOGMax;
-  
+
   // a menu of various one dimensional kernels, example: kernel = setArray(gaussian); 
   float [] gaussian = {0.0048150257, 0.028716037, 0.10281857, 0.22102419, 
-  0.28525233, 0.22102419, 0.10281857, 0.028716037, 0.0048150257};
+    0.28525233, 0.22102419, 0.10281857, 0.028716037, 0.0048150257};
   // float [] sorbel = {1, 0, -1};
   // float [] gaussianLaplacian = {-7.474675E-4, -0.0123763615, -0.04307856, 0.09653235, 
   // 0.31830987, 0.09653235, -0.04307856, -0.0123763615, -7.474675E-4};
   // float [] laplacian = {1, -2, 1}; 
   // ========== End kernel generation variables ======================================================================
-  
-  SignalGenerator (double defaultKernelSigma) {
 
+  private PApplet p; // parent object
+
+  SignalGenerator (PApplet p, double defaultKernelSigma) {
+
+    this.p = p;
     // used for generating smooth noise for original data; lower values are smoother noise
     noiseInput = 0.2;
 
     // the increment of change of the noise input
     noiseIncrement = noiseInput;
-    
-    
 
     // Sigma is the input to dynamic kernel creation functions, it controls the 'spreading'
     // of the kernel. This is an important adjustment for subpixel accuracy.
@@ -42,21 +47,29 @@ class SignalGenerator {
     // and accuracy suffers from over-spreading of the edges.
     // Until an automated method gets put in place to find the ideal kernel sigma value, just
     // simply experiment with different values under controlled conditions, and compare results.
-    
+
     kSigmaGaussianMin = 0.5;
     kSigmaGaussianMax = 8;
-    
+
     kSigmaLOGMin = 0.75;
     kSigmaLOGMax = 1.75;
-    
+
     kSigmaDefault = defaultKernelSigma;
     kSigma = defaultKernelSigma;
   }
 
-  int[] signalGeneratorOutput(int signalSource, int dataLen, int multY) {
+  int[] signalGeneratorOutput(int signalSource, int dataLen, int bitDepth, int waveLength) {
 
     int[] sgOutput = new int[0];
 
+    // the number of bits data values consist of
+    adcBitDepth = bitDepth;
+
+    // 2 to the power of bitDepth -1
+    highestADCValue = int(pow(2.0, float(adcBitDepth))-1); 
+    signalAmplitude = highestADCValue /2;
+    println("Signal Generator signalAmplitude = " + signalAmplitude);
+    
     switch (signalSource) {
     case 0: 
       // hard-coded sensor data containing a shadow edge profile
@@ -67,25 +80,25 @@ class SignalGenerator {
       // a single adjustable step impulse, (square pos or neg pulse) 
       // useful for verifying the kernel is doing what it should.
 
-      sgOutput = singleImpulse(dataLen, multY, 16, false);
+      sgOutput = positiveImpulse(dataLen, waveLength, signalAmplitude);
       SENSOR_PIXELS = sgOutput.length;
       break;
     case 2: 
-      // an adjustable square wave
-      sgOutput = squareWave(dataLen, 40, multY);
+      // an adjustable positive square wave
+      sgOutput = positiveSquareWave(dataLen, waveLength, signalAmplitude);
       SENSOR_PIXELS = sgOutput.length;
       break;
     case 3: 
       // Serial Data from Teensy 3.6 driving TSL1402R or TSL1410R linear photodiode array
       SENSOR_PIXELS = 1280; // Number of pixel values, 256 for TSL1402R sensor, and 1280 for TSL1410R sensor
-      N_BYTES_PER_SENSOR_FRAME = SENSOR_PIXELS * 2; // we use 2 bytes to represent each sensor pixel
-      N_BYTES_PER_SENSOR_FRAME_PLUS1 = N_BYTES_PER_SENSOR_FRAME + 1; // the data bytes + PREFIX byte
-      byteArray = new byte[N_BYTES_PER_SENSOR_FRAME_PLUS1]; // array of raw serial data bytes
-      sgOutput = new int[SENSOR_PIXELS];
+      N_BYTES_PER_SENSOR_FRAME = SENSOR_PIXELS * 2;                    // we use 2 bytes to represent each sensor pixel
+      N_BYTES_PER_SENSOR_FRAME_PLUS1 = N_BYTES_PER_SENSOR_FRAME + 1;   // the data bytes + PREFIX byte
+      byteArray = new byte[N_BYTES_PER_SENSOR_FRAME_PLUS1];            // init the array for raw serial data bytes
+      sgOutput = new int[SENSOR_PIXELS];                               // init the signal generator array
       break;
     case 4: 
       // perlin noise
-      sgOutput = perlinNoise(multY, dataLen);
+      sgOutput = perlinNoise(dataLen, signalAmplitude);
       SENSOR_PIXELS = sgOutput.length;
       break;
     case 5:
@@ -93,12 +106,7 @@ class SignalGenerator {
       break;
     case 6:
       // an adjustable sine wave
-      sgOutput = sineWave(dataLen, 64, 1000);
-      SENSOR_PIXELS = sgOutput.length;
-      break;
-    case 7:
-      // a one cycle sine wave
-      sgOutput = oneCycleSineWaveIntegers(64, 1000);
+      sgOutput = positiveSineWave(dataLen, waveLength, signalAmplitude);
       SENSOR_PIXELS = sgOutput.length;
       break;
     default:
@@ -111,7 +119,7 @@ class SignalGenerator {
     return sgOutput;
   }
 
-  int[] perlinNoise(int multY, int dataLen) {
+  int[] perlinNoise(int dataLen, int amplitude) {
     int[] rdOut = new int[dataLen];
     for (int c = 0; c < dataLen; c++) {
       // adjust smoothness with noise input
@@ -120,7 +128,7 @@ class SignalGenerator {
         noiseInput = noiseIncrement;
       }
       // perlin noise
-      rdOut[c] = int(map(noise(noiseInput), 0, 1, 0, multY));  
+      rdOut[c] = int(map(noise(noiseInput), 0, 1, 0, amplitude));  
       //println (noise(noiseInput));
     }
     return rdOut;
@@ -199,7 +207,7 @@ class SignalGenerator {
     return data;
   }
 
-  int[] singleImpulse(int dataLength, int multY, int pulseWidth, boolean positivePolarity) {
+  int[] positiveImpulse(int dataLength, int pulseWidth, int amplitude) {
 
     if (pulseWidth < 2) {
       pulseWidth = 2;
@@ -218,14 +226,8 @@ class SignalGenerator {
     }
 
     // pulse
-    if (positivePolarity) {
-      for (int c = startPos; c < stopPos; c++) {
-        data[c] = multY;
-      }
-    } else {
-      for (int c = startPos; c < stopPos; c++) {
-        data[c] = -multY;
-      }
+    for (int c = startPos; c < stopPos; c++) {
+      data[c] = amplitude;
     }
 
     // tail
@@ -235,58 +237,44 @@ class SignalGenerator {
     return data;
   }
 
-  int[] squareWave(int dataLength, int wavelength, int multY) {
+  int[] positiveSquareWave(int numSamples, float wavelength, int amplitude) {
 
+    int data[] = new int[numSamples];
+    float dutyCycle = 0.5;
+    double scaler = 1/wavelength;
+    double shift = dutyCycle / 2;
+
+    for (int i = 0; i < numSamples; i++) {
+      float val = (i * scaler + shift) % 1 < dutyCycle ? 1 : 0;
+      data[i] = int(val * amplitude);
+      //println("data[" + i + "]  = " + data[i]);
+    }
+    return data;
+  }
+
+  int[] positiveSineWave(int dataLength, int wavelength, int amplitude) {
+    
     double sinPoint = 0;
-    double squarePoint = 0;
     int data[] = new int[dataLength];
 
     for (int i = 0; i < data.length; i++)
     {
       sinPoint = Math.sin((TWO_PI * i) / wavelength);
-      squarePoint = Math.signum(sinPoint);
-      //println(squarePoint);
-      data[i] =(int)(squarePoint) * multY;
-    }
-    return data;
-  }
-  
-  int[] sineWave(int dataLength, int wavelength, int multY) {
-    
-    double sinPoint = 0;
-    int data[] = new int[dataLength];
-    
-    for (int i = 0; i < data.length; i++)
-    {
-      sinPoint = Math.sin((TWO_PI * i) / wavelength);
-      data[i] =(int)((sinPoint) * multY);
+      data[i] = (int)((((sinPoint) * 0.5) + 0.5)*amplitude);
       //println("data[" + i + "]  = " + data[i]);
     }
     return data;
   }
-    int[] oneCycleSineWaveIntegers(int dataLength, int multY) {
-    
-    double sinPoint = 0;
-    int data[] = new int[dataLength];
-    
-    for (int i = 0; i < data.length; i++)
-    {
-      sinPoint = Math.sin((TWO_PI * i) / dataLength);
-      data[i] =(int)((sinPoint) * multY);
-      //println("data[" + i + "]  = " + data[i]);
-    }
-    return data;
-  }
-  
-   float[] oneCycleSineWaveFloats(int dataLength) {
+
+  float[] oneCycleSineWaveFloats(int dataLength) {
 
     double sinPoint = 0;
     float data[] = new float[dataLength];
-    
+
     for (int i = 0; i < data.length; i++)
     {
       sinPoint = Math.sin((TWO_PI * i) / dataLength);
-      data[i] =(float)((sinPoint) * 0.5) + 0.5;
+      data[i] = (float)((sinPoint) * 0.5) + 0.5;
       //println("data[" + i + "]  = " + data[i]);
     }
     return data;
@@ -303,20 +291,20 @@ class SignalGenerator {
       kernel = createLoGKernal1d(kSigma);
     }
   }
-  
-  double constrainDbl(double value, double min, Double max){
+
+  double constrainDbl(double value, double min, Double max) {
     double retVal;
     if (value < min) {
       retVal = min;
     } else if (value > max) {
       retVal = max;
-    } else{
+    } else {
       retVal = value;
     }
     return retVal;
   }
-  
-  
+
+
   float [] setKernelSource(int kernelSource) {
 
     switch (kernelSource) {
@@ -453,5 +441,30 @@ class SignalGenerator {
     HALF_KERNEL_LENGTH = KERNEL_LENGTH_MINUS1 / 2; // always even divided by 2 = even halves
     //println("KERNEL_LENGTH: " + KERNEL_LENGTH);
     return fkernel;
+  }
+
+  void prepVideoMode() {
+    String[] cameras = Capture.list();
+
+    if (cameras == null) {
+      println("Failed to retrieve the list of available cameras, will try the default...");
+    } 
+    if (cameras.length == 0) {
+      println("There are no cameras available for capture.");
+      exit();
+    } else {
+      println("Available cameras:");
+
+      for (int i = 0; i < cameras.length; i++) {
+        println(i + cameras[i]);
+      }
+      video = new Capture(p, 640, 480);
+      //video = new Capture(this, cameras[0]);
+      // Start capturing the images from the camera
+      video.start();
+      SENSOR_PIXELS = video.width;
+      videoArray = new int[SENSOR_PIXELS];
+      //surface.setSize(video.width, video.height);
+    }
   }
 }

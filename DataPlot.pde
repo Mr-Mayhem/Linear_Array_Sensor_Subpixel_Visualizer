@@ -55,14 +55,9 @@ class dataPlot {
   final color COLOR_OUTPUT_DATA_FADED = color(50, 0, 50);
 
   // other constants
-  // the number of bits data values consist of
-  final int ADC_BIT_DEPTH = 12;
-
-  // this value is 4095 for 12 bits
-  final int HIGHEST_ADC_VALUE = int(pow(2.0, float(ADC_BIT_DEPTH))-1); 
   final float sensorPixelSpacingX = 0.0635;           // 63.5 microns
-  final float sensorPixelsPerMM = 15.74803149606299; // number of pixels per mm in sensor TSL1402R and TSL1410R
-  final float sensorWidthAllPixels = 16.256;         // millimeters
+  final float sensorPixelsPerMM = 15.74803149606299;  // number of pixels per mm in sensor TSL1402R and TSL1410R
+  final float sensorWidthAllPixels = 16.256;          // millimeters
 
   // ==============================================================================================
   int dpXpos;                // dataPlot class init variables
@@ -72,7 +67,13 @@ class dataPlot {
   int dpDataLen;
   int dpTextSize;
   int dptextSizePlus2;       // used to space text height-wise
-
+ 
+  int adcBitDepth;
+  int highestADCValue; 
+  
+  float input;               // The input data value of a given sensor pixel
+                             // using a float here lets us use interpolation to simulate shadow movement in simulation modes.
+  
   float cOutPrev;            // the previous convolution output y value
   float cOut;                // the current convolution output y value
 
@@ -139,7 +140,9 @@ class dataPlot {
   float ScreenNegX;          // holds screen X coordinate for the negative peak subpixel position
   float ScreenCenX;          // holds screen X coordinate for the center subpixel position
   float ScreenPosX;          // holds screen X coordinate for the positive peak subpixel position
-
+  
+  float ScreenMarkX;         // holds screen X coordinate for the center 3 pixel marker subpixel position
+  
   int markSize;              // diameter of drawn subpixel marker circles
   int subpixelMarkerLenY;    // length of vertical lines which indicate subpixel peaks and shadow center location
   int movingAvgKernalLenX;   // Length of moving average filter used to smooth subpixel output
@@ -169,12 +172,6 @@ class dataPlot {
   //Arrays
   
   // array for output signal
-  float[] input0 = new float[0]; // data input y values
-  //float[] input1 = new float[0]; // input history 1
-  //float[] input2 = new float[0]; // input history 2
-  //float[] input3 = new float[0]; // input history 3
-  
-  // array for output signal
   float[] output = new float[0]; 
 
   // array for output signal
@@ -187,7 +184,7 @@ class dataPlot {
   PanZoomX PanZoomPlot;       // pan/zoom object to control pan & zoom of main data plot
   //MovingAverageFilter F1;     // filters the subpixel output data
 
-  dataPlot (PApplet p, int plotXpos, int plotYpos, int plotWidth, int plotHeight, int plotDataLen, int TextSize) {
+  dataPlot (PApplet p, int plotXpos, int plotYpos, int plotWidth, int plotHeight, int plotDataLen, int bitDepth, int TextSize) {
 
     dpXpos = plotXpos;
     dpYpos = plotYpos;
@@ -196,7 +193,13 @@ class dataPlot {
     dpDataLen = plotDataLen;
     dpTextSize = TextSize;
     dptextSizePlus2 = dpTextSize + 2;
+    
+    // the number of bits data values consist of
+    adcBitDepth = bitDepth;
 
+    highestADCValue = int(pow(2.0, float(adcBitDepth))-1); 
+    println("highestADCValue = " + highestADCValue);
+    
     // Create PanZoom object to pan & zoom the main data plot
     PanZoomPlot = new PanZoomX(p, plotDataLen);
 
@@ -224,10 +227,6 @@ class dataPlot {
 
     // array for convolution, get resized after KERNEL_LENGTH is known,
     // must always match kernel length
-    input0 = new float[dpDataLen]; // input data y values
-    //input1 = new float[dpDataLen]; // input history 1
-    //input2 = new float[dpDataLen]; // input history 2
-    //input3 = new float[dpDataLen]; // input history 3
     
     output = new float[KERNEL_LENGTH];
     waterfallTop = new int[width];  // feeds the waterfall display
@@ -386,7 +385,7 @@ class dataPlot {
       processSignalGeneratorData();
     } 
 
-    waterfall(imageWidth, imageHeight); // update and draw the new waterfall image
+    refreshWaterfall(imageWidth, imageHeight); // update and draw the new waterfall image
 
     offsetY = 45;
     fill(255);
@@ -421,9 +420,6 @@ class dataPlot {
         break; // there should not be any valid entries after the first zero entry so quit here for efficiency
       }
     }
-    //arrayCopy(input3, input2); // input value history used for averaging
-    //arrayCopy(input2, input1);
-    //arrayCopy(input1, input0);
   }
 
   void drawKernel(float pan_x, double sigma) {
@@ -483,22 +479,22 @@ class dataPlot {
       // shift right 2 places(divide by 4), and copy the value to a simple global variable
 
       // original data input value
-      input0[outerPtrX] = (byteArray[outerPtrX<<1]<< 8 | (byteArray[(outerPtrX<<1) + 1] & 0xFF))>>2;
-      //float averageInput = input0[outerPtrX] + input1[outerPtrX] + input2[outerPtrX] + input3[outerPtrX]/4;
+      input = (byteArray[outerPtrX<<1]<< 8 | (byteArray[(outerPtrX<<1) + 1] & 0xFF))>>2;
+     
       
       //if (!modulateX){
-      //  input[outerPtrX] = (byteArray[outerPtrX<<1]<< 8 | (byteArray[(outerPtrX<<1) + 1] & 0xFF))>>2;
+      //  input = (byteArray[outerPtrX<<1]<< 8 | (byteArray[(outerPtrX<<1) + 1] & 0xFF))>>2;
       //}else{
-      //  input[outerPtrX] = lerp((byteArray[outerPtrX<<1]<< 8 | (byteArray[(outerPtrX<<1) + 1] & 0xFF))>>2, 
+      //  input = lerp((byteArray[outerPtrX<<1]<< 8 | (byteArray[(outerPtrX<<1) + 1] & 0xFF))>>2, 
       //  (byteArray[(outerPtrX+1)<<1]<< 8 | (byteArray[((outerPtrX+1)<<1) + 1] & 0xFF))>>2, modulationX);
       //}
 
       // plot original data value
       stroke(COLOR_ORIGINAL_DATA);
 
-      point(drawPtrX, HALF_SCREEN_HEIGHT - (input0[outerPtrX] * scale_y));
-      // draw section of greyscale bar showing the 'color' of original data values
-      greyscaleBarMapped(drawPtrX, 0, input0[outerPtrX]);
+      point(drawPtrX, HALF_SCREEN_HEIGHT - (input * scale_y));
+      // draw one rectangular piece of greyscale bar representing original data
+      drawColorBarSegment(drawPtrX, 0, input);
 
       convolutionInnerLoop(); // Convolution Inner Loop
 
@@ -509,8 +505,8 @@ class dataPlot {
         point(drawPtrXLessK, HALF_SCREEN_HEIGHT - (cOut * scale_y));
         //println("output[" + outerPtrX + "]" +output[outerPtrX]);
 
-        // draw section of greyscale bar showing the 'color' of output data values
-        greyscaleBarMapped(drawPtrXLessK, 10, cOut);
+        // draw one rectangular piece of greyscale bar representing convolution output data
+        drawColorBarSegment(drawPtrXLessK, 10, cOut);
 
         find1stDiffPeaks();
       }
@@ -547,22 +543,15 @@ class dataPlot {
       // thousand max. 
       // original data input value
       
-      // 3 camera values of 255 max = 765 * 8 = 6120, = 13 bits, roughly
-      input0[outerPtrX] = Pixelbrightness(videoArray[outerPtrX]) * 8; 
-
-      //if (!modulateX){
-      //  input[outerPtrX] = Pixelbrightness(videoArray[outerPtrX]) * 8;
-      //}else{
-      //  input[outerPtrX] = lerp(Pixelbrightness(videoArray[outerPtrX]) * 8, 
-      //  Pixelbrightness(videoArray[outerPtrX + 1]) * 8, modulationX);
-      //}
+      // 3 camera values of 255 max
+      input = Pixelbrightness(videoArray[outerPtrX]) * 16; 
 
       // plot original data value
       stroke(COLOR_ORIGINAL_DATA);
 
-      point(drawPtrX, HALF_SCREEN_HEIGHT - (input0[outerPtrX] * scale_y));
-      // draw section of greyscale bar showing the 'color' of original data values
-      greyscaleBarMapped(drawPtrX, 0, input0[outerPtrX]);
+      point(drawPtrX, HALF_SCREEN_HEIGHT - (input * scale_y));
+      // draw one rectangular piece of greyscale bar representing original data
+      drawColorBarSegment(drawPtrX, 0, input);
 
       convolutionInnerLoop(); // Convolution Inner Loop
 
@@ -573,8 +562,8 @@ class dataPlot {
         point(drawPtrXLessK, HALF_SCREEN_HEIGHT - (cOut * scale_y));
         //println("output[" + outerPtrX + "]" +output[outerPtrX]);
 
-        // draw section of greyscale bar showing the 'color' of output data values
-        greyscaleBarMapped(drawPtrXLessK, 10, cOut);
+        // draw one rectangular piece of greyscale bar representing convolution output data
+        drawColorBarSegment(drawPtrXLessK, 10, cOut);
 
         find1stDiffPeaks();
       }
@@ -605,18 +594,18 @@ class dataPlot {
 
       // copy one data value from the signal generator output array:
       if (!modulateX) {
-        input0[outerPtrX] = sigGenOutput[outerPtrX];
+        input = sigGenOutput[outerPtrX];
       } else {
-        input0[outerPtrX] = lerp(sigGenOutput[outerPtrX], sigGenOutput[outerPtrX+1], modulationX);
+        input = LinearInterpolate(sigGenOutput[outerPtrX], sigGenOutput[outerPtrX+1], modulationX);
       }
 
       // plot original data value
       strokeWeight(1);
       stroke(COLOR_ORIGINAL_DATA);
 
-      point(drawPtrX, HALF_SCREEN_HEIGHT - (input0[outerPtrX] * scale_y));
-      // draw section of greyscale bar showing the 'color' of original data values
-      greyscaleBarMapped(drawPtrX, 0, input0[outerPtrX]);
+      point(drawPtrX, HALF_SCREEN_HEIGHT - (input * scale_y));
+      // draw one rectangular piece of greyscale bar representing original data
+      drawColorBarSegment(drawPtrX, 0, input);
 
       convolutionInnerLoop(); // Convolution Inner Loop
 
@@ -627,8 +616,8 @@ class dataPlot {
         point(drawPtrXLessK, HALF_SCREEN_HEIGHT - (cOut * scale_y));
         //println("output[" + outerPtrX + "]" +output[outerPtrX]);
 
-        // draw section of greyscale bar showing the 'color' of output data values
-        greyscaleBarMapped(drawPtrXLessK, 10, cOut);
+        // draw one rectangular piece of greyscale bar representing convolution output data
+        drawColorBarSegment(drawPtrXLessK, 10, cOut);
 
         find1stDiffPeaks();
       }
@@ -651,13 +640,13 @@ class dataPlot {
 
     cOutPrev = cOut; // y[output-1] (the previous convolution output value)
 
-    for (innerPtrX = 0; innerPtrX < KERNEL_LENGTH_MINUS1; innerPtrX++) {      // increment the inner loop pointer
-      output[innerPtrX] = output[innerPtrX+1] + (input0[outerPtrX] * kernel[innerPtrX]); // convolution: multiply and accumulate
+    for (innerPtrX = 0; innerPtrX < KERNEL_LENGTH_MINUS1; innerPtrX++) {     // increment the inner loop pointer
+      output[innerPtrX] = output[innerPtrX+1] + (input * kernel[innerPtrX]); // convolution: multiply and accumulate
     }
 
-    output[KERNEL_LENGTH_MINUS1] = input0[outerPtrX] * kernel[KERNEL_LENGTH_MINUS1]; // convolution: multiply only, no accumulate     
+    output[KERNEL_LENGTH_MINUS1] = input * kernel[KERNEL_LENGTH_MINUS1];     // convolution: multiply only, no accumulate     
 
-    cOut = output[0]; // y[output] (the latest convolution output value)
+    cOut = output[0]; // y[output] (the current convolution output value)
 
     // To make this convolution inner loop easier to understand, I unwrap the loop below.
     // The unwrapped loop code below runs ok, but don't mess with the kernel size via the mouse.
@@ -683,7 +672,7 @@ class dataPlot {
 
     // ==================================== End Convolution ==================================================
   }
-
+  
   void find1stDiffPeaks() {
     // =================== Find the 1st difference and store the last two values  ==========================
     // finds the differences and maintains a history of the previous 2 difference values as well,
@@ -692,22 +681,21 @@ class dataPlot {
     diff2Y=diff1Y;      // (left y value)
     diff1Y=diff0Y;      // (center y value)  
     // find 1st difference of the convolved data, the difference between adjacent points in the smoothed data.
-    diff0Y = cOut - cOutPrev; // (right y value) // difference between the current convolution output value 
-    // and the previous one, in the form y[x] - y[x-1]
-    // In dsp, this difference is preferably called the "first difference", but some call it the "first derivative",
-    // and some folks refer to each difference value produced above as a "partial derivative".
+    diff0Y = cOut - cOutPrev; // (right y value) // << The first difference is the difference between the current 
+    // convolution output value and the previous one, in the form y[x] - y[x-1]
+    // In dsp, this difference is preferably called the "first difference", but some texts call it the 
+    // "first derivative", and some texts refer to each difference value produced above as a "partial derivative".
 
-    // =================================== End 1st difference ===============================================
+    // ====================================== End 1st difference ============================================
 
     // plot the first difference data value
     stroke(COLOR_FIRST_DIFFERENCE);
     point((drawPtrXLessKlessD1), HALF_SCREEN_HEIGHT - (diff0Y * scale_y));
 
-    // draw section of greyscale bar showing the 'color' of output2 data values
-    //void greyscaleBarMapped(float x, float scale_x, float y, float value) {
-    greyscaleBarMappedAbs((drawPtrXLessKlessD1), 20, diff0Y);
-
-    // ======================================== Peak Finder ========================================
+    // draw one rectangular piece of greyscale bar representing 1st difference
+    drawColorBarSegmentAbs((drawPtrXLessKlessD1), 20, diff0Y);
+    
+    // ======================================== Peak Finder =================================================
     
     if (Math.abs (diff1Y) > diffThresholdY) { // if the absolute value of the peak is above the threshold value
       if(diff1Y < diff0Y && diff1Y < diff2Y){ // if diff1Y is a negative peak relative to the neighboring values
@@ -751,10 +739,6 @@ class dataPlot {
     // resemble a parabola, the more accurate the subpixel result.
     
     widthMinus1 = width - 1; // saves on math work, used 4 times below
-    preciseWidthX = 0;
-    precisePosX = 0;
-    negPeakSubPixelX = 0;
-    posPeakSubPixelX = 0;
 
     pixelWidthX=posPeakX-negPeakX;
 
@@ -818,7 +802,7 @@ class dataPlot {
         line(ScreenCenX, HALF_SCREEN_HEIGHT + subpixelMarkerLenY, ScreenCenX, HALF_SCREEN_HEIGHT - subpixelMarkerLenY); 
         waterfallTop[int(ScreenCenX)] = color(255); // color the waterfall top pixel the same
         fill(255);
-        textAlign(CENTER); // center the test over the white center marker pip line
+        textAlign(CENTER); // center the center position text over the white center marker pip line
         text(detCounter, int(ScreenCenX), HALF_SCREEN_HEIGHT - subpixelMarkerLenY-10);
         text(String.format("%.3f", precisePosX), int(ScreenCenX), HALF_SCREEN_HEIGHT - subpixelMarkerLenY-20);
         textAlign(LEFT);  // set the textAlign back to LEFT so we don't mess up text below
@@ -834,51 +818,57 @@ class dataPlot {
       }
  
       // Mark negPeakX 3 pixel cluster with one blue circle each
-      float tempX = ((negPeakX - wDataStartPos) * scale_x) + pan_x;
-      if (tempX > 0 && tempX < widthMinus1){ // if the x index is on the screen)
+      ScreenMarkX = ((negPeakX - wDataStartPos) * scale_x) + pan_x;
+      if (ScreenNegX > 0 && ScreenNegX < widthMinus1){ // if the x index is on the screen)
         stroke(0, 0, 255);
-        ellipse(tempX - scale_x, (HALF_SCREEN_HEIGHT - (negPeakLeftY * scale_y)), markSize, markSize);
-        ellipse(tempX, (HALF_SCREEN_HEIGHT - (negPeakCenterY * scale_y)), markSize, markSize);
-        ellipse(tempX + scale_x, (HALF_SCREEN_HEIGHT - (negPeakRightY * scale_y)), markSize, markSize);
+        ellipse(ScreenMarkX - scale_x, (HALF_SCREEN_HEIGHT - (negPeakLeftY * scale_y)), markSize, markSize);
+        ellipse(ScreenMarkX, (HALF_SCREEN_HEIGHT - (negPeakCenterY * scale_y)), markSize, markSize);
+        ellipse(ScreenMarkX + scale_x, (HALF_SCREEN_HEIGHT - (negPeakRightY * scale_y)), markSize, markSize);
       }
 
       // Mark posPeakX 3 pixel cluster with one red circle each
-      tempX = ((posPeakX - wDataStartPos) * scale_x) + pan_x;
-      if (tempX > 0 && tempX < widthMinus1){ // if the x index is on the screen)
+      ScreenMarkX = ((posPeakX - wDataStartPos) * scale_x) + pan_x;
+      if (ScreenMarkX > 0 && ScreenMarkX < widthMinus1){ // if the x index is on the screen)
         stroke(255, 0, 0);
-        ellipse(tempX - scale_x, (HALF_SCREEN_HEIGHT - (posPeakLeftY * scale_y)), markSize, markSize);
-        ellipse(tempX, (HALF_SCREEN_HEIGHT - (posPeakCenterY * scale_y)), markSize, markSize);
-        ellipse(tempX + scale_x, (HALF_SCREEN_HEIGHT - (posPeakRightY * scale_y)), markSize, markSize);
+        ellipse(ScreenMarkX - scale_x, (HALF_SCREEN_HEIGHT - (posPeakLeftY * scale_y)), markSize, markSize);
+        ellipse(ScreenMarkX, (HALF_SCREEN_HEIGHT - (posPeakCenterY * scale_y)), markSize, markSize);
+        ellipse(ScreenMarkX + scale_x, (HALF_SCREEN_HEIGHT - (posPeakRightY * scale_y)), markSize, markSize);
       }
     }
   }
 
-  void greyscaleBarMapped(float x, float y, float value) {
+  void drawColorBarSegment(float x, float y, float value) {
 
     // prepare color to correspond to sensor pixel reading
-    color bColor = color(map(value, 0, HIGHEST_ADC_VALUE, 0, 255));
-
+    int greyVal = int(map(value, 0, highestADCValue, 0, 255));
+    
     // Plot a row of pixels near the top of the screen ,
     // and color them with the 0 to 255 greyscale sensor value
-    stroke(bColor);
-    fill(bColor);
+    stroke(greyVal);
+    fill(greyVal);
     rect(x, y, scale_x, 9);
   }
-
-  void greyscaleBarMappedAbs(float x, float y, float value) {
-
+  
+  void drawColorBarSegmentAbs(float x, float y, float value) {
+    float greyScale = map(abs(value), 0, highestADCValue/4, 0, 255);
     // prepare color to correspond to sensor pixel reading
-    color bColor = color(abs(map(value, 0, HIGHEST_ADC_VALUE, 0, 255)));
+    color greenish = color(0, greyScale, 0);  // greenish because we vary green and leave red and blue at zero
     // Plot a row of pixels near the top of the screen ,
     // and color them with the 0 to 255 greyscale sensor value
 
-    stroke(bColor);
-    fill(bColor);
+    stroke(greenish);
+    fill(greenish);
     rect(x, y, scale_x, 9);
+    //x = constrain(x, 0, width-1);
+    //int xx = int(x);
+    //for (int i = xx; i < (xx + scale_x); i++) {
+    //  int index = constrain(i, 0, width-1);
+    //  waterfallTop[index] = greenish; // color the waterfall top pixel the same
+    //}
   }
-
-  void waterfall(int wWidth, int wHeight) {
-
+  
+  void refreshWaterfall(int wWidth, int wHeight) {
+    
     waterfallImg.loadPixels();
 
     // Copy a row of pixels from waterfallTop[] and write them to the top row of the waterfall image
@@ -902,34 +892,39 @@ class dataPlot {
     }
     
     waterfallImg.updatePixels();
-
-    image(waterfallImg, 0, height-imageHeight); // show the waterfall image prior to writing the subpixel text so the text is on top
+    
+    // show the waterfall image prior to drawing the subpixel text so the text is on top
+    image(waterfallImg, 0, height-imageHeight); 
 
     // print the text for the subpixel output values
     fill(255);
-    offsetY = height-10;
-    text("pos SubPixel Location: " + String.format("%.3f", posPeakSubPixelX), 10, offsetY);
+    offsetY = height-60;
+    
+    text("SubPixel - : " + String.format("%.3f", negPeakSubPixelX), 10, offsetY);
+    
+    offsetY -= dptextSizePlus2;
+    text("SubPixel + : " + String.format("%.3f", posPeakSubPixelX), 10, offsetY);
 
     offsetY -= dptextSizePlus2;
-    text("neg SubPixel Location: " + String.format("%.3f", negPeakSubPixelX), 10, offsetY);
+    text("First Diff - Peak: " + negPeakX, 10, offsetY);
 
     offsetY -= dptextSizePlus2;
-    text("neg Peak Location: " + negPeakX, 10, offsetY);
+    text("First Diff + Peak: " + posPeakX, 10, offsetY);
 
     offsetY -= dptextSizePlus2;
-    text("pos Peak Location: " + posPeakX, 10, offsetY);
+    text("Subpixel Shadow Width: " + String.format("%.3f", preciseWidthX), 10, offsetY);
 
     offsetY -= dptextSizePlus2;
-    text("Subpixel Width: " + String.format("%.3f", preciseWidthX), 10, offsetY);
+    text("Subpixel Shadow Width in mm: " + String.format("%.5f", preciseWidthMMX), 10, offsetY);
 
     offsetY -= dptextSizePlus2;
-    text("Width in mm: " + String.format("%.5f", preciseWidthMMX), 10, offsetY);
+    text("Subpixel Shadow Center: " + String.format("%.3f", precisePosX), 10, offsetY);
 
     offsetY -= dptextSizePlus2;
-    text("Subpixel Center Position = " + String.format("%.3f", precisePosX), 10, offsetY);
-
-    offsetY -= dptextSizePlus2;
-    text("Center Position in mm: " + String.format("%.5f", precisePosMMX), 10, offsetY);
+    text("Subpixel Shadow Center in mm: " + String.format("%.5f", precisePosMMX), 10, offsetY);
+    
+    offsetY -= (dptextSizePlus2) * 2;
+    text("Data on last shadow detected (far right side):", 10, offsetY);
   }
 
   int[] perlinNoiseColor(int multY, int dataLen) {
@@ -1055,6 +1050,10 @@ class dataPlot {
   color ScaledColorFromInt(int value, int MaxValueRef) {
     return color(map(value, 0, MaxValueRef, 0, 255));
   }
+  
+  float LinearInterpolate(float y1, float y2, float mu) {
+   return(y1*(1-mu)+y2*mu);
+}
 
   //double qinty(float ym1, float y0, float yp1) { // another subpixel fit function, not used, but here for reference
   ////QINT - quadratic interpolation of three adjacent samples
