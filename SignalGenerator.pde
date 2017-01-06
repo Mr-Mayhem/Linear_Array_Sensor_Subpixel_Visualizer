@@ -80,7 +80,7 @@ class SignalGenerator {
       // a single adjustable step impulse, (square pos or neg pulse) 
       // useful for verifying the kernel is doing what it should.
 
-      sgOutput = positiveImpulse(dataLen, waveLength, signalAmplitude);
+      sgOutput = Impulse(dataLen, waveLength, signalAmplitude);
       SENSOR_PIXELS = sgOutput.length;
       break;
     case 2: 
@@ -207,7 +207,7 @@ class SignalGenerator {
     return data;
   }
 
-  int[] positiveImpulse(int dataLength, int pulseWidth, int amplitude) {
+  int[] Impulse(int dataLength, int pulseWidth, int amplitude) {
 
     if (pulseWidth < 2) {
       pulseWidth = 2;
@@ -222,17 +222,17 @@ class SignalGenerator {
 
     // head
     for (int c = 0; c < dataLength; c++) {
-      data[c] = 0;
+      data[c] = amplitude;
     }
 
     // pulse
     for (int c = startPos; c < stopPos; c++) {
-      data[c] = amplitude;
+      data[c] = 0;
     }
 
     // tail
     for (int c = stopPos; c < dataLength; c++) {
-      data[c] = 0;
+      data[c] = amplitude;
     }
     return data;
   }

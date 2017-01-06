@@ -47,13 +47,21 @@ class dataPlot {
    */
      
   final color COLOR_ORIGINAL_DATA = color(255);
-  final color COLOR_ORIGINAL_DATA_FADED = color(25);
   final color COLOR_KERNEL_DATA = color(255, 255, 0);
   final color COLOR_FIRST_DIFFERENCE = color(0, 255, 0);
-  final color COLOR_FIRST_DIFFERENCE_FADED = color(0, 50, 0);
   final color COLOR_OUTPUT_DATA = color(255, 0, 255);
-  final color COLOR_OUTPUT_DATA_FADED = color(50, 0, 50);
+  final color COLOR_NEGATIVE_TICK = color(0, 0, 255);
+  final color COLOR_CENTER_TICK = color(255, 255, 255);
+  final color COLOR_POSITIVE_TICK = color(255, 0, 0);
+  final color COLOR_NEGATIVE_PEAK_CLUSTER = color(0, 0, 255);
+  final color COLOR_POSITIVE_PEAK_CLUSTER = color(255, 0, 0);
 
+  // Y Positions (height-wise positions) of display bars which show various signal data along top of screen
+  final int COLORBAR_1_Y = 0;
+  final int COLORBAR_2_Y = 10;
+  final int COLORBAR_3_Y = 20;
+  final int COLORBARS_TOTAL_HEIGHT = 30;
+  
   // other constants
   final float sensorPixelSpacingX = 0.0635;           // 63.5 microns
   final float sensorPixelsPerMM = 15.74803149606299;  // number of pixels per mm in sensor TSL1402R and TSL1410R
@@ -83,8 +91,9 @@ class dataPlot {
   int wDataStartPos;         // the index of the first data point
   int wDataStopPos;          // the index of the last data point
 
-  int outerPtrX = 0;         // outer loop pointer
-  int innerPtrX = 0;         // inner loop pointer, used only during convolution
+  int outerPtrX;             // outer loop pointer
+  int outerCount;            // outer loop counter
+  int innerPtrX;             // inner loop pointer, used only during convolution
 
   float pan_x;               // local copies of variables from PanZoom object
   float scale_x;
@@ -126,7 +135,7 @@ class dataPlot {
   float preciseWidthLowPassX;// width filtered with simple running average filter
   float preciseWidthMMX;     // filament width output in mm
 
-  float precisePosX;         // center position output in pixels
+  float preciseCenterX;         // center position output in pixels
   float precisePosLowPassX;  // position filtered with simple running average filter
   float precisePosMMX;       // canter position output in mm
 
@@ -147,7 +156,7 @@ class dataPlot {
   int subpixelMarkerLenY;    // length of vertical lines which indicate subpixel peaks and shadow center location
   int movingAvgKernalLenX;   // Length of moving average filter used to smooth subpixel output
 
-  int diffThresholdY;        // threshold required to detect a first diff peak for additional processing
+  int diffThresholdY;        // threshold below which peaks are ignored in the 1st difference peak finder
 
   int detCounter;            // counts the number of subpixel runs in one frame of data
   
@@ -208,6 +217,10 @@ class dataPlot {
     pan_y = PanZoomPlot.getPanY();
     scale_y = PanZoomPlot.getScaleY();
 
+    outerPtrX = 0;         // outer loop pointer
+    outerCount = 0;        // outer loop counter
+    innerPtrX = 0;         // inner loop pointer, used only during convolution
+
     // multiplies the plotted y values of the kernel, for greater height 
     // visibility since the values in typical kernels are so small
     kernelMultiplier = 100.0;
@@ -221,6 +234,9 @@ class dataPlot {
     // sets height deviation of vertical lines from center height, 
     // indicates subpixel peaks and shadow center location
     subpixelMarkerLenY = int(height * 0.02);
+    
+    // threshold below which peaks are ignored in the 1st difference peak finder
+    diffThresholdY = 256;
 
     // corrects mm width by multiplying by this value
     CalCoefWidthX = 0.981;
@@ -257,7 +273,7 @@ class dataPlot {
     }
 
     //movingAvgKernalLenX = 7;
-    //// reduces jitter on subpixel precisePosX, higher = more smoothing, default = 7;
+    //// reduces jitter on subpixel preciseCenterX, higher = more smoothing, default = 7;
     //F1 = new MovingAverageFilter(movingAvgKernalLenX);
   }
 
@@ -304,8 +320,8 @@ class dataPlot {
   void display() {
     background(0);
     
-    // counts the number of subpixel shadows, resets here at the top of the data frame
-    detCounter = 0;  
+    outerCount = 0;          // outer loop counter, increments once each outer loop
+    detCounter = 0;          // counts the number of subpixel shadows
     
     // update the local pan and scale variables from the PanZoom object which maintains them
     pan_x = PanZoomPlot.getPanX();
@@ -408,18 +424,18 @@ class dataPlot {
     drawKernel(0, SG1.kSigma);
     
    // list the subpixel detections scross the screen for debugging
-    for (outerPtrX = 0; outerPtrX < dpDataLen; outerPtrX++) {
-      if (detections[outerPtrX] > 0) {
-        //text("[" + outerPtrX + "]:" + String.format("%.3f", detections[outerPtrX]), i*70, height-(height/3.5));
+    //for (outerPtrX = 0; outerPtrX < dpDataLen; outerPtrX++) {
+    //  if (detections[outerPtrX] > 0) {
+    //    text("[" + outerPtrX + "]:" + String.format("%.3f", detections[outerPtrX]), outerPtrX*70, height-(height/3.5));
         
-        // erase the previous detection value so it does not linger in the array between frames
-        // we do this here rather than in the outer loop for efficiency; no need to set all elements to zero,
-        // because there are many less detections than array elements.
-        detections[outerPtrX] = 0;
-      } else {
-        break; // there should not be any valid entries after the first zero entry so quit here for efficiency
-      }
-    }
+    //    // erase the previous detection value so it does not linger in the array between frames
+    //    // we do this here rather than in the outer loop for efficiency; no need to set all elements to zero,
+    //    // because there are many less detections than array elements.
+    //    detections[outerPtrX] = 0;
+    //  } else {
+    //    break; // there should not be any valid entries after the first zero entry so quit here for efficiency
+    //  }
+    //}
   }
 
   void drawKernel(float pan_x, double sigma) {
@@ -451,11 +467,6 @@ class dataPlot {
   }
 
   void processSerialData() {
-
-    int outerCount = 0;
-    
-    negPeakX = wDataStopPos; // one past the last pixel, to prevent false positives?
-    posPeakX = wDataStopPos; // one past the last pixel, to prevent false positives?
 
     // increment the outer loop pointer
     for (outerPtrX = wDataStartPos; outerPtrX < wDataStopPos; outerPtrX++) {
@@ -493,8 +504,9 @@ class dataPlot {
       stroke(COLOR_ORIGINAL_DATA);
 
       point(drawPtrX, HALF_SCREEN_HEIGHT - (input * scale_y));
+
       // draw one rectangular piece of greyscale bar representing original data
-      drawColorBarSegment(drawPtrX, 0, input);
+      drawColorBarSegment(drawPtrX, COLORBAR_1_Y, input);
 
       convolutionInnerLoop(); // Convolution Inner Loop
 
@@ -506,7 +518,7 @@ class dataPlot {
         //println("output[" + outerPtrX + "]" +output[outerPtrX]);
 
         // draw one rectangular piece of greyscale bar representing convolution output data
-        drawColorBarSegment(drawPtrXLessK, 10, cOut);
+        drawColorBarSegment(drawPtrXLessK, COLORBAR_2_Y, cOut);
 
         find1stDiffPeaks();
       }
@@ -514,11 +526,6 @@ class dataPlot {
   }
 
   void processVideoData() {
-
-    int outerCount = 0;
-
-    negPeakX = wDataStopPos; // one past the last pixel, to prevent false positives?
-    posPeakX = wDataStopPos; // one past the last pixel, to prevent false positives?
 
     // increment the outer loop pointer
     for (outerPtrX = wDataStartPos; outerPtrX < wDataStopPos; outerPtrX++) {
@@ -550,8 +557,9 @@ class dataPlot {
       stroke(COLOR_ORIGINAL_DATA);
 
       point(drawPtrX, HALF_SCREEN_HEIGHT - (input * scale_y));
+
       // draw one rectangular piece of greyscale bar representing original data
-      drawColorBarSegment(drawPtrX, 0, input);
+      drawColorBarSegment(drawPtrX, COLORBAR_1_Y, input);
 
       convolutionInnerLoop(); // Convolution Inner Loop
 
@@ -563,7 +571,7 @@ class dataPlot {
         //println("output[" + outerPtrX + "]" +output[outerPtrX]);
 
         // draw one rectangular piece of greyscale bar representing convolution output data
-        drawColorBarSegment(drawPtrXLessK, 10, cOut);
+        drawColorBarSegment(drawPtrXLessK, COLORBAR_2_Y, cOut);
 
         find1stDiffPeaks();
       }
@@ -571,11 +579,6 @@ class dataPlot {
   }
 
   void processSignalGeneratorData() {
-
-    int outerCount = 0;
-
-    negPeakX = wDataStopPos; // one past the last pixel, to prevent false positives?
-    posPeakX = wDataStopPos; // one past the last pixel, to prevent false positives?
 
     // increment the outer loop pointer
     for (outerPtrX = wDataStartPos; outerPtrX < wDataStopPos-1; outerPtrX++) { 
@@ -604,8 +607,9 @@ class dataPlot {
       stroke(COLOR_ORIGINAL_DATA);
 
       point(drawPtrX, HALF_SCREEN_HEIGHT - (input * scale_y));
+      
       // draw one rectangular piece of greyscale bar representing original data
-      drawColorBarSegment(drawPtrX, 0, input);
+      drawColorBarSegment(drawPtrX, COLORBAR_1_Y, input);
 
       convolutionInnerLoop(); // Convolution Inner Loop
 
@@ -617,7 +621,7 @@ class dataPlot {
         //println("output[" + outerPtrX + "]" +output[outerPtrX]);
 
         // draw one rectangular piece of greyscale bar representing convolution output data
-        drawColorBarSegment(drawPtrXLessK, 10, cOut);
+        drawColorBarSegment(drawPtrXLessK, COLORBAR_2_Y, cOut);
 
         find1stDiffPeaks();
       }
@@ -693,7 +697,7 @@ class dataPlot {
     point((drawPtrXLessKlessD1), HALF_SCREEN_HEIGHT - (diff0Y * scale_y));
 
     // draw one rectangular piece of greyscale bar representing 1st difference
-    drawColorBarSegmentAbs((drawPtrXLessKlessD1), 20, diff0Y);
+    drawColorBarSegmentAbs((drawPtrXLessKlessD1), COLORBAR_3_Y, diff0Y);
     
     // ======================================== Peak Finder =================================================
     
@@ -709,9 +713,9 @@ class dataPlot {
         posPeakRightY = diff0Y;   // y value @ x index -1 (right)
         posPeakCenterY = diff1Y;  // y value @ x index -2 (center) (positive 1st difference peak location)
         posPeakLeftY = diff2Y;    // y value @ x index -3 (left)
-        if (negPeakFound){ // insures that pairs of peaks(one negative, one positive) are available when subpixelCalc runs
+        if (negPeakFound){ // insures that pairs of peaks(one negative, one positive) are fed to subpixelCalc
           negPeakFound = false; // reset for next time around
-          subpixelCalc(); // Calculate and display and store the subpixel facts for this peak pair
+          subpixelCalc(); // calculate, display, and store the subpixel estimate associated with this peak pair
         }
       }
     }
@@ -744,7 +748,7 @@ class dataPlot {
 
     // check for width in acceptable range, what is acceptable is up to you, within reason.
     // was originally 'pixelWidthX < 103' for filiment width sketch, (15.7pixels per mm, 65535/635=103)
-    if (pixelWidthX > 8 && pixelWidthX < 512) { // if pixel-based width is within this range
+    if (pixelWidthX > 8 && pixelWidthX < 256) { // if pixel-based width is within this range
 
       // sub-pixel edge detection using interpolation
       // from Accelerated Image Processing blog, posting: Sub-Pixel Maximum
@@ -768,68 +772,73 @@ class dataPlot {
       preciseWidthMMX = preciseWidthX * sensorPixelSpacingX * CalCoefWidthX;
 
       // solve for the center position by adding the left and right pixel and subpixel locations up, and then dividing the sum by 2
-      precisePosX = (((negPeakX + negPeakSubPixelX) + (posPeakX + posPeakSubPixelX)) / 2);
+      preciseCenterX = (((negPeakX + negPeakSubPixelX) + (posPeakX + posPeakSubPixelX)) / 2);
       
       // copy the subpixel center value to the detections array, useful downstream for multi-shadow calculations & averaging
-      detections[detCounter] = precisePosX; 
+      detections[detCounter] = preciseCenterX; 
       // increment the detection counter
       detCounter++; 
       
-      //F1.nextValue(precisePosX);
+      //F1.nextValue(preciseCenterX);
       //precisePosLowPassX = F1.getAverage();
 
       // keep the center from lagging too far; keep it between the left and right peaks during rapid shadow movement
       //precisePosLowPassX = constrainFloat(precisePosLowPassX, negPeakX, posPeakX);
 
-      //precisePosLowPassX = (precisePosLowPassX * 0.9) + (precisePosX * 0.1);         // apply a simple low pass filter
+      //precisePosLowPassX = (precisePosLowPassX * 0.9) + (preciseCenterX * 0.1);         // apply a simple low pass filter
 
-      precisePosMMX = precisePosX * sensorPixelSpacingX;
+      precisePosMMX = preciseCenterX * sensorPixelSpacingX;
 
       noFill();
-      
-      // Mark negPeakSubPixelX with blue line
+
+      // Mark negative 1st difference subpixel estimate with line
       ScreenNegX = ((negPeakX + negPeakSubPixelX - wDataStartPos) * scale_x) + pan_x;
       if (ScreenNegX > 0 && ScreenNegX < widthMinus1){ // if the x index is on the screen)
-        stroke(0, 0, 255);
+        stroke(COLOR_NEGATIVE_TICK);
         line(ScreenNegX, HALF_SCREEN_HEIGHT + subpixelMarkerLenY, ScreenNegX, HALF_SCREEN_HEIGHT - subpixelMarkerLenY);
-        waterfallTop[int(ScreenNegX)] = color(0, 0, 255); // color the waterfall top pixel the same
+        line(ScreenNegX, 0, ScreenNegX, COLORBARS_TOTAL_HEIGHT); 
+        waterfallTop[int(ScreenNegX)] = color(COLOR_NEGATIVE_TICK); // color the waterfall top pixel the same
       }
 
-      // Mark subpixel center with white line
-      ScreenCenX = ((precisePosX - wDataStartPos) * scale_x) + pan_x;
+      // Mark subpixel center estimate with line
+      ScreenCenX = ((preciseCenterX - wDataStartPos) * scale_x) + pan_x;
       if (ScreenCenX > 0 && ScreenCenX < widthMinus1){ // if the x index is on the screen)
-        stroke(255);
+        stroke(COLOR_CENTER_TICK);
         line(ScreenCenX, HALF_SCREEN_HEIGHT + subpixelMarkerLenY, ScreenCenX, HALF_SCREEN_HEIGHT - subpixelMarkerLenY); 
-        waterfallTop[int(ScreenCenX)] = color(255); // color the waterfall top pixel the same
-        fill(255);
+        line(ScreenCenX, 0, ScreenCenX, COLORBARS_TOTAL_HEIGHT); 
+        waterfallTop[int(ScreenCenX)] = color(COLOR_CENTER_TICK); // color the waterfall top pixel the same
+        fill(COLOR_CENTER_TICK);
         textAlign(CENTER); // center the center position text over the white center marker pip line
         text(detCounter, int(ScreenCenX), HALF_SCREEN_HEIGHT - subpixelMarkerLenY-10);
-        text(String.format("%.3f", precisePosX), int(ScreenCenX), HALF_SCREEN_HEIGHT - subpixelMarkerLenY-20);
+        text(String.format("%.3f", preciseCenterX), int(ScreenCenX), HALF_SCREEN_HEIGHT - subpixelMarkerLenY-20);
         textAlign(LEFT);  // set the textAlign back to LEFT so we don't mess up text below
         noFill();
       }
       
-      // Mark posPeakSubPixelX with red line
-      stroke(255, 0, 0);
+      // Mark negative 1st difference subpixel estimate with line
+      stroke(COLOR_POSITIVE_TICK);
       ScreenPosX = ((posPeakX + posPeakSubPixelX - wDataStartPos) * scale_x) + pan_x;
       if (ScreenPosX > 0 && ScreenPosX < widthMinus1){ // if the x index is on the screen)
         line(ScreenPosX, HALF_SCREEN_HEIGHT + subpixelMarkerLenY, ScreenPosX, HALF_SCREEN_HEIGHT - subpixelMarkerLenY);
-        waterfallTop[int(ScreenPosX)] = color(255, 0, 0); // color the waterfall top pixel the same
+        line(ScreenPosX, 0, ScreenPosX, COLORBARS_TOTAL_HEIGHT); 
+        waterfallTop[int(ScreenPosX)] = COLOR_POSITIVE_TICK; // color the waterfall top pixel the same
       }
  
-      // Mark negPeakX 3 pixel cluster with one blue circle each
+      // Draw Ellipse on top 3 1st difference pixels
+ 
+      // Mark negPeakX 3 pixel cluster with one circle each
       ScreenMarkX = ((negPeakX - wDataStartPos) * scale_x) + pan_x;
       if (ScreenNegX > 0 && ScreenNegX < widthMinus1){ // if the x index is on the screen)
-        stroke(0, 0, 255);
+        stroke(COLOR_NEGATIVE_PEAK_CLUSTER);
         ellipse(ScreenMarkX - scale_x, (HALF_SCREEN_HEIGHT - (negPeakLeftY * scale_y)), markSize, markSize);
         ellipse(ScreenMarkX, (HALF_SCREEN_HEIGHT - (negPeakCenterY * scale_y)), markSize, markSize);
         ellipse(ScreenMarkX + scale_x, (HALF_SCREEN_HEIGHT - (negPeakRightY * scale_y)), markSize, markSize);
       }
 
-      // Mark posPeakX 3 pixel cluster with one red circle each
+      // Mark posPeakX 3 pixel cluster with one circle each
       ScreenMarkX = ((posPeakX - wDataStartPos) * scale_x) + pan_x;
       if (ScreenMarkX > 0 && ScreenMarkX < widthMinus1){ // if the x index is on the screen)
-        stroke(255, 0, 0);
+        stroke(COLOR_POSITIVE_PEAK_CLUSTER);
         ellipse(ScreenMarkX - scale_x, (HALF_SCREEN_HEIGHT - (posPeakLeftY * scale_y)), markSize, markSize);
         ellipse(ScreenMarkX, (HALF_SCREEN_HEIGHT - (posPeakCenterY * scale_y)), markSize, markSize);
         ellipse(ScreenMarkX + scale_x, (HALF_SCREEN_HEIGHT - (posPeakRightY * scale_y)), markSize, markSize);
@@ -898,33 +907,31 @@ class dataPlot {
 
     // print the text for the subpixel output values
     fill(255);
-    offsetY = height-60;
+    offsetY = height-80;
     
-    text("SubPixel - : " + String.format("%.3f", negPeakSubPixelX), 10, offsetY);
+    text("SubPixel - " + nfs(negPeakSubPixelX, 0, 4), 10, offsetY);
     
     offsetY -= dptextSizePlus2;
-    text("SubPixel + : " + String.format("%.3f", posPeakSubPixelX), 10, offsetY);
+    text("SubPixel + " + nfs(posPeakSubPixelX, 0, 4), 10, offsetY);
 
     offsetY -= dptextSizePlus2;
-    text("First Diff - Peak: " + negPeakX, 10, offsetY);
+    text("Width: " + nf(preciseWidthX, 0, 4), 10, offsetY);
 
     offsetY -= dptextSizePlus2;
-    text("First Diff + Peak: " + posPeakX, 10, offsetY);
+    text("Width mm: " + nf(preciseWidthMMX, 0, 4), 10, offsetY);
 
     offsetY -= dptextSizePlus2;
-    text("Subpixel Shadow Width: " + String.format("%.3f", preciseWidthX), 10, offsetY);
+    text("Center: " + nf(preciseCenterX, 0, 4), 10, offsetY);
 
     offsetY -= dptextSizePlus2;
-    text("Subpixel Shadow Width in mm: " + String.format("%.5f", preciseWidthMMX), 10, offsetY);
-
+    text("Center mm: " + nf(precisePosMMX, 0, 4), 10, offsetY);
+    
     offsetY -= dptextSizePlus2;
-    text("Subpixel Shadow Center: " + String.format("%.3f", precisePosX), 10, offsetY);
-
-    offsetY -= dptextSizePlus2;
-    text("Subpixel Shadow Center in mm: " + String.format("%.5f", precisePosMMX), 10, offsetY);
+    text("Number of Shadows Detected: " + detCounter, 10, offsetY);
     
     offsetY -= (dptextSizePlus2) * 2;
-    text("Data on last shadow detected (far right side):", 10, offsetY);
+    text("Last Detected Shadow Info (far right)", 10, offsetY);
+    
   }
 
   int[] perlinNoiseColor(int multY, int dataLen) {
