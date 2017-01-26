@@ -236,7 +236,7 @@ class dataPlot {
     subpixelMarkerLenY = int(height * 0.02);
     
     // threshold below which peaks are ignored in the 1st difference peak finder
-    diffThresholdY = 256;
+    diffThresholdY = 0;
 
     // corrects mm width by multiplying by this value
     CalCoefWidthX = 0.981;
@@ -701,7 +701,7 @@ class dataPlot {
     
     // ======================================== Peak Finder =================================================
     
-    if (Math.abs (diff1Y) > diffThresholdY) { // if the absolute value of the peak is above the threshold value
+    if (abs (diff1Y) > diffThresholdY) { // if the absolute value of the peak is above the threshold value
       if(diff1Y < diff0Y && diff1Y < diff2Y){ // if diff1Y is a negative peak relative to the neighboring values
         negPeakX = (outerPtrX - 0.5) - HALF_KERNEL_LENGTH; // x-1 and x-0.5 for difference being in-between original data
         negPeakRightY = diff0Y;   // y value @ x index -1 (right)
@@ -714,8 +714,18 @@ class dataPlot {
         posPeakCenterY = diff1Y;  // y value @ x index -2 (center) (positive 1st difference peak location)
         posPeakLeftY = diff2Y;    // y value @ x index -3 (left)
         if (negPeakFound){ // insures that pairs of peaks(one negative, one positive) are fed to subpixelCalc
-          negPeakFound = false; // reset for next time around
           subpixelCalc(); // calculate, display, and store the subpixel estimate associated with this peak pair
+          negPeakFound = false; // reset for next time around
+          
+          negPeakX = 0;
+          negPeakRightY = 0;
+          negPeakCenterY = 0;
+          negPeakLeftY = 0;
+          
+          posPeakX = 0;
+          posPeakRightY = 0;
+          posPeakCenterY = 0;
+          posPeakLeftY = 0;
         }
       }
     }

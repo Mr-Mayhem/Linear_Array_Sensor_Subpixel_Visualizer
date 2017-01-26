@@ -201,8 +201,9 @@ void setup() {
   }
 
   DP1.modulateX = true; // apply simulated shadow movement, half a pixel left and right in a sine wave motion
-  DP1.diffThresholdY = 64; // absolute value 1st difference peaks must reach to be detected
+  DP1.diffThresholdY = 128; // absolute value 1st difference peaks must reach to be detected
   if (signalSource == 3) {
+    // Get Data from Serial Port Mode. Serial Settings =============================================================================
     noLoop();
     // Set up serial connection
     // Set to your Teensy COM port number to fix error, make sure it talks to Arduino software if stuck.
@@ -210,9 +211,8 @@ void setup() {
     printArray(Serial.list());
     println("End of Serial Port List");
     
-    // Serial Settings =============================================================================
+    // Linux Serial Port Notes:
     
-    //Linux
     // Insure to follow the Teensy instructions on adding rules for serial to work in linux.
     // https://www.pjrc.com/teensy/td_download.html#linux_issues
     
@@ -224,16 +224,16 @@ void setup() {
     // 4. Unplug the usb wire again, and plug it back in. Note the serial monitro window closes
     // 5. Try to run this sketch again, the frames should now be updating and plotting incoming data. 
     
-    // This was the only way I was able to fix this bug.
-    // This bug is mentioned in the link above with the following description:
-    
+    // This was the only way I was able to work around this bug.
+    // The bug is mentioned in the link above with the following description:
     // Windows & Linux: When using the Serial Monitor with the USB Keyboard/Mouse option, 
     // sometimes a "teensy gateway communication error" can occur. 
     // Close and reopen the serial monitor to regain communication. 
-    myPort = new Serial(this, "/dev/ttyACM0", 12500000);
+    
+    myPort = new Serial(this, "/dev/ttyACM0", 12500000); // 12.5 megabits per second Teensy 3.6
 
     //Windows
-    //myPort = new Serial(this, "COM5", 12500000);
+    //myPort = new Serial(this, "COM5", 12500000); // 12.5 megabits per second Teensy 3.6
     
     // =============================================================================================
     //delay(100);
