@@ -4,7 +4,7 @@ A nice data visualizer for photodiode array sensors, with multiple subpixel shad
 It runs in a simulated data mode with no sensor hooked up so you can see it run.
 Just download the PDE files into the same destination directory, and run it in Processing. 
 
-This is much more fancy than the basic examples included with the TSL1402R and TSL1410R libraries.
+This is a much fancier version of the Processing examples included with the TSL1402R and TSL1410R libraries.
 It displays the data and position of multiple shadows falling on the sensor, with subpixel precision.
 The subpixel mechanism is graphically represensted to see multiple levels of how it works.
 A waterfall history plots changes over time, just for fun.
